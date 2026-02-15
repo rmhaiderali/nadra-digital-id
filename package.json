@@ -1,0 +1,22 @@
+{
+  "name": "nadra-digital-id",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.js",
+  "dependencies": {
+    "@noble/ciphers": "^2.1.1",
+    "@noble/hashes": "^2.0.1",
+    "asn1js": "^3.0.7",
+    "base45": "^2.0.1",
+    "buffer": "^6.0.3",
+    "cbor": "^10.0.11",
+    "luxon": "^3.7.2",
+    "ms": "^2.1.3",
+    "pako": "^2.1.0",
+    "pkijs": "^3.3.3"
+  },
+  "prettier": {
+    "semi": false,
+    "trailingComma": "none"
+  }
+}
