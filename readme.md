@@ -375,7 +375,7 @@ verify()
 
 # Flow after QR Scan in PAK ID
 
-![Flow](flow.svg)
+![Flow](https://raw.githubusercontent.com/rmhaiderali/nadra-digital-id/refs/heads/main/flow.svg)
 
 # 📄 License
 
