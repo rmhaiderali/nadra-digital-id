@@ -4,7 +4,10 @@
   "type": "module",
   "main": "./index.js",
   "license": "LGPL-2.0-only",
-  "repository": "https://github.com/rmhaiderali/nadra-digital-id",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rmhaiderali/nadra-digital-id.git"
+  },
   "keywords": [
     "nadra",
     "digital id",
