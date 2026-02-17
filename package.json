@@ -1,8 +1,16 @@
 {
   "name": "nadra-digital-id",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "./index.js",
+  "license": "LGPL-2.0-only",
+  "repository": "https://github.com/rmhaiderali/nadra-digital-id",
+  "keywords": [
+    "nadra",
+    "digital id",
+    "decryption",
+    "verification"
+  ],
   "dependencies": {
     "@noble/ciphers": "^2.1.1",
     "@noble/hashes": "^2.0.1",

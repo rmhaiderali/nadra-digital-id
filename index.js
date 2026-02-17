@@ -220,7 +220,7 @@ function pemToBytes(pem) {
  * @param {Uint8Array} data - Signed message bytes
  * @param {Uint8Array} signature - Raw signature bytes
  * @param {Uint8Array} publicKey - Public key bytes
- * @returns {Promise<{data: true} | {error: string}>}
+ * @returns {Promise<{} | {error: string}>}
  */
 async function verifyRS256(data, signature, publicKey) {
   try {
@@ -245,10 +245,10 @@ async function verifyRS256(data, signature, publicKey) {
 
     if (!isValid) throw new Error("Invalid signature")
 
-    return { data: true }
+    return {}
   } catch (e) {
     if (debug) console.log(e)
-    return error("Signature does not match data")
+    return error("Failed to verify signature")
   }
 }
 
@@ -257,7 +257,7 @@ async function verifyRS256(data, signature, publicKey) {
  * @param {Object} vc - The Verifiable Credential.
  * @param {Object} [options] - Optional parameters for verification.
  * @param {string} [options.publicKeyPem] - The RSA Public Key (PEM format).
- * @returns {Promise<{data: true} | {error: string}>} Returns true if the signature is valid.
+ * @returns {Promise<{} | {error: string}>} Returns no error if signature is valid.
  */
 async function verify(vc, options = {}) {
   if (!isPlainObject(vc)) {
@@ -308,7 +308,8 @@ async function verify(vc, options = {}) {
   // const verifier = crypto.createVerify("SHA256")
   // verifier.update(dataBuffer)
   // verifier.end()
-  // return { data: verifier.verify(publicKey, signatureBuffer) }
+  // const isValid = verifier.verify(publicKey, signatureBuffer)
+  // return isValid ? {} : error("Failed to verify signature")
 
   return await verifyRS256(dataBuffer, signatureBuffer, publicKeyBuffer)
 }

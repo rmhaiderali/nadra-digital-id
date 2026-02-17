@@ -121,9 +121,7 @@ Used for PIN validation.
 const { data: pinHash, error } = sha256("0000")
 ```
 
----
-
-## 🔹 `timeRange(options)`
+## 🔹 `timeRange(options?)`
 
 Generates possible time values used for decryption.
 
@@ -137,7 +135,7 @@ options?: {
     start: Date
     end: Date
   }
-  step?: number  // milliseconds
+  step?: number // milliseconds
   now?: Date
 }
 ```
@@ -213,14 +211,14 @@ options?: {
 
 ### Returns
 
-`{ error: string }` OR `{ data: true }`
+`{ error: string }` OR `{}`
 
 ### Example
 
 ```js
 const { error } = await verify(vc)
 
-if (!error) console.log("Signature valid")
+if (!error) console.log("Signature is valid")
 ```
 
 ## 🔹 `normalizeText(text)`
@@ -245,8 +243,6 @@ Important for Urdu RTL text validation.
 const { data, error } = normalizeText(address)
 ```
 
----
-
 # 🔐 Security Notes
 
 ### Encryption
@@ -263,7 +259,7 @@ const { data, error } = normalizeText(address)
 # 🧪 Full Usage Example
 
 ```js
-import nadraDigitalId from "./index.js"
+import nadraDigitalId from "nadra-digital-id"
 
 async function main() {
   // nadraDigitalId.setDebug(true)
@@ -291,7 +287,7 @@ async function main() {
     return
   }
 
-  const { data: timeValues, timeRangeError } = nadraDigitalId.timeRange({
+  const { data: timeValues, error: timeRangeError } = nadraDigitalId.timeRange({
     now
   })
 
@@ -316,7 +312,7 @@ async function main() {
   }
 
   if (!date || !vc) {
-    console.log("Decryption failed: Incorrect time range")
+    console.log("Failed to decrypt data")
     return
   }
 
@@ -324,7 +320,7 @@ async function main() {
   console.log("Decrypted Date:", date)
 
   // Uncomment following line to test forged VC scenario
-  // vc.credentialSubject.permanenetAddress.value += " "
+  // vc.credentialSubject.temporaryAddress.value += " "
 
   const { error: verificationError } = await nadraDigitalId.verify(vc)
 
@@ -351,11 +347,11 @@ main()
 
 # ⚠️ Common Errors
 
-| Error                    | Cause                              |
-| ------------------------ | ---------------------------------- |
-| Failed to decode data    | QR corrupted                       |
-| Failed to decrypt data   | Wrong PIN / time                   |
-| Signature does not match | Tampered VC / Incorrect Public Key |
+| Error                      | Cause                              |
+| -------------------------- | ---------------------------------- |
+| Failed to decode data      | Wrong Format / Corrupted data      |
+| Failed to decrypt data     | Wrong PIN / time                   |
+| Failed to verify signature | Tampered VC / Incorrect Public Key |
 
 # 🏗️ Internal Architecture
 
@@ -373,9 +369,9 @@ decrypt()
 verify()
 ```
 
-# Flow after QR Scan in PAK ID
+# Flow after QR Code Scan in PAK ID
 
-![Flow](https://raw.githubusercontent.com/rmhaiderali/nadra-digital-id/refs/heads/main/flow.svg)
+![Flow Diagram](https://raw.githubusercontent.com/rmhaiderali/nadra-digital-id/refs/heads/main/flow.svg)
 
 # 📄 License
 
