@@ -319,8 +319,9 @@ async function main() {
   console.log("Decrypted VC:", vc)
   console.log("Decrypted Date:", date)
 
-  // Uncomment following line to test forged VC scenario
-  // vc.credentialSubject.temporaryAddress.value += " "
+  // Uncomment following lines to test forged VC scenario
+  // if (vc.credentialSubject?.name?.value) vc.credentialSubject.name.value += " "
+  // else console.log("Cannot forge VC. Field is missing. Try some other field.")
 
   const { error: verificationError } = await nadraDigitalId.verify(vc)
 
@@ -331,15 +332,17 @@ async function main() {
 
   console.log("VC verification successful")
 
-  const { data: normalizedAddress, error: normalizationError } =
-    nadraDigitalId.normalizeText(vc.credentialSubject.temporaryAddress.value)
+  if (vc.credentialSubject?.temporaryAddress?.value) {
+    const { data: normalizedAddress, error: normalizationError } =
+      nadraDigitalId.normalizeText(vc.credentialSubject.temporaryAddress.value)
 
-  if (normalizationError) {
-    console.log(normalizationError)
-    return
+    if (normalizationError) {
+      console.log(normalizationError)
+      return
+    }
+
+    console.log("Normalized Address:", normalizedAddress)
   }
-
-  console.log("Normalized Address:", normalizedAddress)
 }
 
 main()
