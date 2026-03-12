@@ -1,8 +1,8 @@
 // import crypto from "crypto"
 import ms from "ms"
-import cbor from "cbor"
 import pako from "pako"
 import base45 from "base45"
+import * as cbor2 from "cbor2"
 import * as pkijs from "pkijs"
 import * as asn1js from "asn1js"
 import { Buffer } from "buffer"
@@ -127,7 +127,7 @@ function decode(data) {
   try {
     const gzipBuffer = base45.decode(base45String)
     const cborBuffer = pako.inflate(gzipBuffer)
-    const jsonString = cbor.decodeFirstSync(cborBuffer)
+    const jsonString = cbor2.decode(cborBuffer)
     return { data: JSON.parse(jsonString) }
   } catch (e) {
     if (debug) console.log(e)

@@ -378,4 +378,4 @@ verify()
 
 # 📄 License
 
-LGPL 2.0 only
+MIT
