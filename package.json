@@ -1,6 +1,6 @@
 {
   "name": "nadra-digital-id",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "type": "module",
   "main": "./index.js",
   "license": "MIT",
@@ -17,8 +17,8 @@
   "dependencies": {
     "@noble/ciphers": "^2.1.1",
     "@noble/hashes": "^2.0.1",
+    "@rmhaiderali/base45": "^100.0.0",
     "asn1js": "^3.0.7",
-    "base45": "^2.0.1",
     "buffer": "^6.0.3",
     "cbor2": "^2.3.0",
     "luxon": "^3.7.2",
