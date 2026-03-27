@@ -12,6 +12,33 @@ import { pbkdf2 } from "@noble/hashes/pbkdf2.js"
 import { sha256 as sha256Raw } from "@noble/hashes/sha2.js"
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js"
 
+type VC = {
+  "@context": string[]
+  type: string[]
+  id: string
+  issuer: string
+  issuanceDate: string
+  expirationDate: string
+  credentialSubject: unknown
+  proof: {
+    type: string
+    created: string
+    proofPurpose: string
+    verificationMethod: string
+    jws: string
+  }
+}
+
+function successResult(data: any) {
+  return { data }
+}
+
+function errorResult(message: string) {
+  return { error: message }
+}
+
+type Result = ReturnType<typeof successResult> | ReturnType<typeof errorResult>
+
 // prettier-ignore
 const pubKeys = {
   // Balochistan, Punjab and Federal Arms License
@@ -26,27 +53,11 @@ const pubKeys = {
 
 let debug = false
 
-/**
- * @param {boolean} value
- */
-function setDebug(value) {
+function setDebug(value: boolean) {
   debug = value
 }
 
-/**
- * @param {string} message
- */
-function error(message) {
-  return { error: message }
-}
-
-/**
- * @param {string} text
- * @returns {{data: string} | {error: string}}
- */
-function removeBidiControls(text) {
-  if (typeof text !== "string") return error("text must be a string")
-
+function removeBidiControls(text: string) {
   // \u061c: Arabic Letter Mark (ALM)
   // \u200e-\u200f: Left-to-Right / Right-to-Left Marks
   // \u202a-\u202e: Embedding and Override controls (LRE, RLE, PDF, LRO, RLO)
@@ -54,70 +65,61 @@ function removeBidiControls(text) {
   return text.replace(/[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "")
 }
 
-/**
- * @param {string} text
- * @returns {{data: string} | {error: string}}
- */
-function normalizeText(text) {
-  if (typeof text !== "string") return error("text must be a string")
+function normalizeText(text: string): Result {
+  if (typeof text !== "string") return errorResult("text must be a string")
 
   const data = removeBidiControls(text)
     .split("،")
     .map((s) => s.trim())
     .join("، ")
 
-  return { data }
+  return successResult(data)
 }
 
-function isPlainObject(value) {
+function isPlainObject(value: unknown): boolean {
   if (Object.prototype.toString.call(value) !== "[object Object]") return false
   const proto = Object.getPrototypeOf(value)
   return proto === Object.prototype || proto === null
 }
 
-function range(start, end, step = 1) {
-  const result = []
+function range(start: number, end: number, step = 1): number[] {
+  const result: number[] = []
   for (let i = start; i <= end; i += step) result.push(i)
   return result
 }
 
-function ceilStep(value, step) {
+function ceilStep(value: number, step: number): number {
   return Math.ceil(value / step) * step
 }
 
-function roundStep(value, step) {
+function roundStep(value: number, step: number): number {
   return Math.round(value / step) * step
 }
 
-function floorStep(value, step) {
+function floorStep(value: number, step: number): number {
   return Math.floor(value / step) * step
 }
 
 // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript
-function isValidDate(d) {
-  return d instanceof Date && !isNaN(d)
+function isValidDate(d: unknown): boolean {
+  return d instanceof Date && !isNaN(d.getTime())
 }
 
-/**
- * Generates SHA-256 hash of a string
- * @param {string} data - The data to hash
- * @returns {{data: string} | {error: string}} Hexadecimal representation of the hash
- */
-function sha256(data) {
-  if (typeof data !== "string") return error("data must be a string")
+function sha256(data: string): Result {
+  if (typeof data !== "string") return errorResult("data must be a string")
+
+  // Platform independent
+  return successResult(bytesToHex(sha256Raw(utf8ToBytes(data))))
+
+  // Platforms with node:crypto support
   // const hash = crypto.createHash("sha256")
   // hash.update(data, "utf8")
-  // return { data: hash.digest("hex") }
-  return { data: bytesToHex(sha256Raw(utf8ToBytes(data))) }
+  // return successResult(hash.digest("hex"))
 }
 
-/**
- * @param {string} data - the digital ID data to decode
- * @returns {{data: string} | {error: string}} result of the decoding process
- */
-function decode(data) {
-  if (typeof data !== "string") return error("data must be a string")
-  if (!data) return error("data must not be an empty string")
+function decode(data: string): Result {
+  if (typeof data !== "string") return errorResult("data must be a string")
+  if (!data) return errorResult("data must not be an empty string")
 
   const prefix = "URN:VC1:"
   const base45String = data.startsWith(prefix)
@@ -128,152 +130,153 @@ function decode(data) {
     const gzipBuffer = base45.decode(base45String)
     const cborBuffer = pako.inflate(gzipBuffer)
     const jsonString = cbor2.decode(cborBuffer)
-    return { data: JSON.parse(jsonString) }
+    return successResult(JSON.parse(jsonString as string))
   } catch (e) {
     if (debug) console.log(e)
-    return error("Failed to decode data")
+    return errorResult("Failed to decode data")
   }
 }
 
-/**
- * @param {Object} [options]
- * @param {Object} [options.bounds]
- * @param {Date} [options.bounds.start]
- * @param {Date} [options.bounds.end]
- * @param {number} [options.step] - step in milliseconds (default: 5 minutes)
- * @param {Date} [options.now] - reference date for generating time range (default: current date)
- * @returns {{data: Date[]} | {error: string}} array of Date objects representing the time range
- */
-function timeRange(options = {}) {
+type TimeRangeOptions = {
+  bounds?: {
+    start: Date
+    end: Date
+  }
+  step?: number // milliseconds
+  now?: Date
+}
+
+function timeRange(options: TimeRangeOptions = {}): Result {
   if (options && !isPlainObject(options))
-    return error("options must be a plain object")
+    return errorResult("options must be a plain object")
 
   const bounds = options.bounds
   const step = options.step ?? ms("5m")
   const now = options.now ?? new Date()
 
-  if (!Number.isInteger(step)) return error("options.step must be an integer")
-  if (step <= 0) return error("options.step must be greater than 0")
+  if (!Number.isInteger(step))
+    return errorResult("options.step must be an integer")
+  if (step <= 0) return errorResult("options.step must be greater than 0")
 
   if (bounds) {
     if (!isPlainObject(bounds))
-      return error("options.bounds must be a plain object")
+      return errorResult("options.bounds must be a plain object")
     if (!isValidDate(bounds.start))
-      return error("options.bounds.start must be a valid date")
+      return errorResult("options.bounds.start must be a valid date")
     if (!isValidDate(bounds.end))
-      return error("options.bounds.end must be a valid date")
+      return errorResult("options.bounds.end must be a valid date")
     if (bounds.start >= bounds.end)
-      return error("options.bounds.start must be less than options.bounds.end")
+      return errorResult(
+        "options.bounds.start must be less than options.bounds.end"
+      )
 
-    const start = floorStep(bounds.start, step)
-    const end = ceilStep(bounds.end, step)
+    const start = floorStep(Number(bounds.start), step)
+    const end = ceilStep(Number(bounds.end), step)
     const dateRange = range(start, end, step)
-    return { data: dateRange.map((t) => new Date(t)) }
+    return successResult(dateRange.map((t) => new Date(t)))
   } else {
-    if (!isValidDate(now)) return error("options.now must be a valid date")
+    if (!isValidDate(now))
+      return errorResult("options.now must be a valid date")
 
-    const closest = roundStep(now, step)
+    const closest = roundStep(Number(now), step)
     const dateRange = range(closest - step, closest + step, step)
-    return { data: dateRange.map((t) => new Date(t)) }
+    return successResult(dateRange.map((t) => new Date(t)))
   }
 }
 
-/**
- * @param {string} data - the digital ID data to decrypt
- * @param {string} pin - the PIN code to use for decryption
- * @param {Date} date - the date to use for generating the salt
- * @returns {{data: string} | {error: string}} result of the decryption process
- */
-function decrypt(data, pin, date) {
+function decrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
       DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm")
     )
 
+    // Platform independent
     const encryptedBytes = Buffer.from(data, "base64")
     const key = pbkdf2(sha256Raw, pin, salt, { c: 1000, dkLen: 16 })
     const decrypted = new TextDecoder().decode(ecb(key).decrypt(encryptedBytes))
 
+    // Platforms with node:crypto support
     // const key = crypto.pbkdf2Sync(pin, salt, 1000, 16, "sha256")
     // const decipher = crypto.createDecipheriv("aes-128-ecb", key, null)
     // let decrypted = decipher.update(data, "base64", "utf8")
     // decrypted += decipher.final("utf8")
 
-    return { data: decrypted }
+    return successResult(decrypted)
   } catch (e) {
     if (debug) console.log(e)
-    return error("Failed to decrypt data")
+    return errorResult("Failed to decrypt data")
   }
 }
 
-/**
- * Convert PEM to bytes
- * @param {string} pem - PEM formatted string
- */
-function pemToBytes(pem) {
+function pemToBytes(pem: string): Buffer {
   const base64 = pem.split("\n").slice(1, -1).join("")
   return Buffer.from(base64, "base64")
 }
 
-/**
- * Raw RS256 signature verification
- * @param {Uint8Array} data - Signed message bytes
- * @param {Uint8Array} signature - Raw signature bytes
- * @param {Uint8Array} publicKey - Public key bytes
- * @returns {Promise<{} | {error: string}>}
- */
-async function verifyRS256(data, signature, publicKey) {
+const cryptoEngine = pkijs.getCrypto()
+
+async function verifyRS256(
+  data: Uint8Array,
+  signature: Uint8Array,
+  publicKey: Uint8Array
+): Promise<Result> {
   try {
+    if (!cryptoEngine) return errorResult("Crypto engine not available")
+
     const asn1 = asn1js.fromBER(publicKey)
 
-    if (asn1.offset === -1) throw new Error("Failed to parse public key")
+    if (asn1.offset === -1) return errorResult("Failed to parse public key")
 
     // const publicKeyInfo = new pkijs.PublicKeyInfo({
     //   schema: asn1.result
-    // }).toSchema(true)
+    // }).toSchema()
     // console.log("Parsed Public Key Info", publicKeyInfo)
 
     const algorithm = { hash: "SHA-256", name: "RSASSA-PKCS1-v1_5" }
 
-    const cryptoKey = await pkijs
-      .getCrypto()
-      .subtle.importKey("spki", publicKey, algorithm, true, ["verify"])
+    const cryptoKey = await cryptoEngine.subtle.importKey(
+      "spki",
+      publicKey,
+      algorithm,
+      true,
+      ["verify"]
+    )
 
-    const isValid = await pkijs
-      .getCrypto()
-      .subtle.verify(algorithm, cryptoKey, signature, data)
+    const isValid = await cryptoEngine.subtle.verify(
+      algorithm,
+      cryptoKey,
+      signature,
+      data
+    )
 
-    if (!isValid) throw new Error("Invalid signature")
+    if (!isValid) return errorResult("Invalid signature")
 
-    return {}
+    return successResult(true)
   } catch (e) {
     if (debug) console.log(e)
-    return error("Failed to verify signature")
+    return errorResult("Failed to verify signature")
   }
 }
 
-/**
- * Verifies a Signed Verifiable Credential.
- * @param {Object} vc - The Verifiable Credential.
- * @param {Object} [options] - Optional parameters for verification.
- * @param {string} [options.publicKeyPem] - The RSA Public Key (PEM format).
- * @returns {Promise<{} | {error: string}>} Returns no error if signature is valid.
- */
-async function verify(vc, options = {}) {
+type VerifyOptions = {
+  publicKeyPem?: string
+}
+
+async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
   if (!isPlainObject(vc)) {
-    return error("vc must be a plain object")
+    return errorResult("vc must be a plain object")
   }
 
   if (!isPlainObject(vc.proof)) {
-    return error("vc.proof must be a plain object")
+    return errorResult("vc.proof must be a plain object")
   }
 
   if (typeof vc.proof.jws !== "string") {
-    return error("vc.proof.jws must be a string")
+    return errorResult("vc.proof.jws must be a string")
   }
 
   if (!Array.isArray(vc.type)) {
-    return error("vc.type must be an array")
+    return errorResult("vc.type must be an array")
   }
 
   let defaultPublicKeyPem = pubKeys.NIMS
@@ -290,28 +293,30 @@ async function verify(vc, options = {}) {
   const publicKeyPem = options.publicKeyPem || defaultPublicKeyPem
 
   if (publicKeyPem && typeof publicKeyPem !== "string") {
-    return error("options.publicKeyPem must be a string")
+    return errorResult("options.publicKeyPem must be a string")
   }
 
-  const vcWithoutProof = { ...vc }
-  delete vcWithoutProof.proof
+  const { proof, ...vcWithoutProof } = vc
 
   const vcWithoutProofStringified = JSON.stringify(vcWithoutProof)
 
   const data = vcWithoutProofStringified
 
-  const signatureBuffer = Buffer.from(vc.proof.jws, "base64")
-  const dataBuffer = Buffer.from(data, "utf8")
-  const publicKeyBuffer = pemToBytes(publicKeyPem)
+  const dataBuffer = Buffer.from(data, "utf8") as Uint8Array
+  const signatureBuffer = Buffer.from(proof.jws, "base64") as Uint8Array
+  const publicKeyBuffer = pemToBytes(publicKeyPem) as Uint8Array
 
+  // Platform independent
+  return await verifyRS256(dataBuffer, signatureBuffer, publicKeyBuffer)
+
+  // Platforms with node:crypto support
   // const publicKey = crypto.createPublicKey(publicKeyPem)
   // const verifier = crypto.createVerify("SHA256")
   // verifier.update(dataBuffer)
   // verifier.end()
-  // const isValid = verifier.verify(publicKey, signatureBuffer)
-  // return isValid ? {} : error("Failed to verify signature")
-
-  return await verifyRS256(dataBuffer, signatureBuffer, publicKeyBuffer)
+  // return verifier.verify(publicKey, signatureBuffer)
+  //   ? successResult(true)
+  //   : errorResult("Failed to verify signature")
 }
 
 // prettier-ignore

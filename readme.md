@@ -1,6 +1,6 @@
 # 📘 NADRA Digital ID
 
-A JavaScript library for **decoding, decrypting, validating, and verifying NADRA Digital ID QR / VC (Verifiable Credential) data**.
+A JavaScript library for decoding, decrypting, validating, and verifying NADRA Digital ID QR / VC (Verifiable Credential) data.
 
 It supports:
 
