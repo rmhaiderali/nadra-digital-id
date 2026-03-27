@@ -1,6 +1,6 @@
 {
   "name": "nadra-digital-id",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.cjs",
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@types/luxon": "^3.7.1",
     "@types/ms": "^2.1.0",
+    "@types/node": "^25.5.0",
     "@types/pako": "^2.0.4",
     "tsdown": "^0.21.6",
     "typescript": "^6.0.2"

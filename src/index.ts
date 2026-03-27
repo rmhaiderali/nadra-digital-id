@@ -40,6 +40,12 @@ function errorResult(message: string) {
 type Result = ReturnType<typeof successResult> | ReturnType<typeof errorResult>
 
 // prettier-ignore
+const testKeyPair = {
+  private: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjvQOv99Sw627h\nvtDCyqnj7XZ9QDMxQ0eyKGBMAKzScFHe6C0av9XDSs7S2AVPkt537tj5/xgTksqA\nJUwq8SPVe9HwhUZj9qvqd7GEKxvbnaKNNf4Nq6PLhc+aiNSS+vkU9n8ItUZbT6j4\ndGdz7ve1EG4i595QXCU1q/Byf9CUxGevlTq6dilmx+MtDYVbfQR9NWkPVBztEdUa\nzi36az/HB1ec5diPcJGzOmptnCfA51vfJwc6vB08KsR217hHn2o//oIQaWNfZN9O\nUNMARxRJvqjMJtEihrpurkzd0kVBNNrM4Eaf1KXB2ZFpWa7jOUnMRE7rK27wqW0T\nWWGHpJM1AgMBAAECggEAGeE3Y45WybofciDkiVZNgxzPm8EpcB40rg6/jrN+8DUa\nYKniwkjtilFceoJY7CeFB30JhDNUcZj7UR+r7a9UgqSdAWerzZ1RAQaUEjBx7H2X\n5NMvaS9JoE22/1kwSvmhR5wRaJRtB+BgE8fqn7aWyKky0t2lml02T0iYPPLAab9H\nIxn6CodlNyHV/zqbz3aF8pTFQWfp0yAWlgeKhLSu3BNiR6eFy0fDRQQElw8ft5h1\ng8KzR41YlG/+TswFTBT+QDovKKWLrKI+bQGC7gxQ7t82svvTztg976+sRkRaWesZ\ndH5oVm8rQDI3Wo8Zgd7ZKjAakt5kJ4T4Jz0jplYfEQKBgQD2tJMZQ1BYVq7XPT6y\nyLghG8D5rfV5K2V0UrIY64nAY/IoQzDU6fsRZDuqlUtUhT1Eb4weZBp0yNvfLwGR\n8AKuZ8udrvg9GJ88geHF0rtJSzyOQmSoE8CaXWAJ4Dlq7r1JIVmI5J8mMDqizIH8\nwZlKGl8frzd9BOTHb0swfIjb7QKBgQDsUYGnNtp6TVVRIRi1P/fMkeojGTaEcMb5\n6eCzGd+joB9dV2krfhTon7rJ2FwkUEzHmEvmTaE5SuHEX/BFT0Q+aAnwgNXn3Uf6\n2yXjg79awbrjEaeqTEABcWCMyyYgLYixDNxjvudpWcgPDV4G5gaI+7Q+g6zkrEIN\n8QI3UUX7aQKBgF0r/24IFRz3x9p0P+ynj5q5b50cTNvxPsS6wpZUxlaJqJf6IEQZ\nBgAgecRH1AZct7HT6vhDWBaJETjt+MrT+T9C5gxsW0Y/uUvRxaG/n4njxz/25Srx\nIslpwG6aZzTyazxmQvlHVq/GgS6gy+rYdvsckJZXxz4JDhof9yadsdZVAoGAPJM7\n97/Qyu7NwskIC1XFUBPK/4oz9kjuSBtSNLaaI9gkkgmY9MQR2fsvpxOlss0+kR8R\nvYwCmqv+KRcqgKmr5Y9HlPWBXzjSfZP1J1ebEkl8fT4GS1nWQkhspkpgkHj7g963\nE35Y1SFlba5QftYxsKVMc4XPKKKbH/W6SrGzjZkCgYEAnjAC8jkzLv3BbaZr76PO\n1nPOJcD3pFtC+r6TQoTPVJ5ek8/lX7GMk74VLQTf5rgyo1rhhb87O8w0tKMV4aHX\ncP97YrDg1N9GkCqV9Gxnaj5ZWI+0ikT3qaOu59lwjQoVxxXw0lMeCKQEt+1H79zv\nZ65V1+fkOMZzbi5hJAa4LNY=\n-----END PRIVATE KEY-----",
+  public: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA470Dr/fUsOtu4b7Qwsqp\n4+12fUAzMUNHsihgTACs0nBR3ugtGr/Vw0rO0tgFT5Led+7Y+f8YE5LKgCVMKvEj\n1XvR8IVGY/ar6nexhCsb252ijTX+Daujy4XPmojUkvr5FPZ/CLVGW0+o+HRnc+73\ntRBuIufeUFwlNavwcn/QlMRnr5U6unYpZsfjLQ2FW30EfTVpD1Qc7RHVGs4t+ms/\nxwdXnOXYj3CRszpqbZwnwOdb3ycHOrwdPCrEdte4R59qP/6CEGljX2TfTlDTAEcU\nSb6ozCbRIoa6bq5M3dJFQTTazOBGn9SlwdmRaVmu4zlJzERO6ytu8KltE1lhh6ST\nNQIDAQAB\n-----END PUBLIC KEY-----"
+}
+
+// prettier-ignore
 const pubKeys = {
   // Balochistan, Punjab and Federal Arms License
   ARMS_LICENSE: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA28dc1Tw7To//89HjvW1n\nx98RlyyypoF1JpRL06IKM+vwAZwFo+xvr7/GR1QHsMzivKuVswKOC6DhPzUwAj1o\nAojvcx43BTHGsYQkyrcILiSBpPH0PxMqfb4VeaGIy6sKcVrJzUeUDJ3PVceVBTtq\ntb42BnEu+NdBvEvIRfBf71enDVdm+h//RXBvL/EBpmC8yS/UI22B90PX6vM6GSaP\n0wocHQhioFKhU1/2d3XKwvjVvDousf+JzxK7EcKerriZRdwZ/BMs/ATiqpw3v9dJ\ncXCTasezZFrPWPHc4ChHF5Gy+18Gu0Gopkilg1m7OBygGOeSsef3QcheIAX32TUR\nGQIDAQAB\n-----END PUBLIC KEY-----",
@@ -117,6 +123,19 @@ function sha256(data: string): Result {
   // return successResult(hash.digest("hex"))
 }
 
+function encode(data: any): Result {
+  const prefix = "URN:VC1:"
+
+  try {
+    const cborBuffer = cbor2.encode(data)
+    const gzipBuffer = pako.deflate(cborBuffer)
+    return successResult(prefix + base45.encode(gzipBuffer))
+  } catch (e) {
+    if (debug) console.log(e)
+    return errorResult("Failed to encode data")
+  }
+}
+
 function decode(data: string): Result {
   if (typeof data !== "string") return errorResult("data must be a string")
   if (!data) return errorResult("data must not be an empty string")
@@ -129,8 +148,7 @@ function decode(data: string): Result {
   try {
     const gzipBuffer = base45.decode(base45String)
     const cborBuffer = pako.inflate(gzipBuffer)
-    const jsonString = cbor2.decode(cborBuffer)
-    return successResult(JSON.parse(jsonString as string))
+    return successResult(cbor2.decode(cborBuffer))
   } catch (e) {
     if (debug) console.log(e)
     return errorResult("Failed to decode data")
@@ -184,6 +202,31 @@ function timeRange(options: TimeRangeOptions = {}): Result {
   }
 }
 
+function encrypt(data: string, pin: string, date: Date): Result {
+  try {
+    const salt = Buffer.from(
+      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm")
+    )
+
+    // Platform independent
+    const key = pbkdf2(sha256Raw, pin, salt, { c: 1000, dkLen: 16 })
+    const bytes = new TextEncoder().encode(data)
+    const encryptedBytes = ecb(key).encrypt(bytes)
+    const encrypted = Buffer.from(encryptedBytes).toString("base64")
+
+    // Platforms with node:crypto support
+    // const key = crypto.pbkdf2Sync(pin, salt, 1000, 16, "sha256")
+    // const cipher = crypto.createCipheriv("aes-128-ecb", key, null)
+    // let encrypted = cipher.update(data, "utf8", "base64")
+    // encrypted += cipher.final("base64")
+
+    return successResult(encrypted)
+  } catch (e) {
+    if (debug) console.log(e)
+    return errorResult("Failed to encrypt data")
+  }
+}
+
 function decrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
@@ -191,9 +234,10 @@ function decrypt(data: string, pin: string, date: Date): Result {
     )
 
     // Platform independent
-    const encryptedBytes = Buffer.from(data, "base64")
     const key = pbkdf2(sha256Raw, pin, salt, { c: 1000, dkLen: 16 })
-    const decrypted = new TextDecoder().decode(ecb(key).decrypt(encryptedBytes))
+    const bytes = Buffer.from(data, "base64")
+    const decryptedBytes = ecb(key).decrypt(bytes)
+    const decrypted = new TextDecoder().decode(decryptedBytes)
 
     // Platforms with node:crypto support
     // const key = crypto.pbkdf2Sync(pin, salt, 1000, 16, "sha256")
@@ -215,13 +259,43 @@ function pemToBytes(pem: string): Buffer {
 
 const cryptoEngine = pkijs.getCrypto()
 
+async function signRS256(
+  data: Uint8Array,
+  privateKey: Uint8Array
+): Promise<Result> {
+  try {
+    if (!cryptoEngine) return errorResult("Crypto engine is not available")
+
+    const asn1 = asn1js.fromBER(privateKey)
+
+    if (asn1.offset === -1) return errorResult("Failed to parse private key")
+
+    const algorithm = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
+
+    const cryptoKey = await cryptoEngine.subtle.importKey(
+      "pkcs8",
+      privateKey,
+      algorithm,
+      true,
+      ["sign"]
+    )
+
+    const signature = await cryptoEngine.subtle.sign(algorithm, cryptoKey, data)
+
+    return successResult(Buffer.from(signature).toString("base64"))
+  } catch (e) {
+    if (debug) console.log(e)
+    return errorResult("Failed to sign data")
+  }
+}
+
 async function verifyRS256(
   data: Uint8Array,
   signature: Uint8Array,
   publicKey: Uint8Array
 ): Promise<Result> {
   try {
-    if (!cryptoEngine) return errorResult("Crypto engine not available")
+    if (!cryptoEngine) return errorResult("Crypto engine is not available")
 
     const asn1 = asn1js.fromBER(publicKey)
 
@@ -232,7 +306,7 @@ async function verifyRS256(
     // }).toSchema()
     // console.log("Parsed Public Key Info", publicKeyInfo)
 
-    const algorithm = { hash: "SHA-256", name: "RSASSA-PKCS1-v1_5" }
+    const algorithm = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
 
     const cryptoKey = await cryptoEngine.subtle.importKey(
       "spki",
@@ -256,6 +330,42 @@ async function verifyRS256(
     if (debug) console.log(e)
     return errorResult("Failed to verify signature")
   }
+}
+
+type SignOptions = {
+  privateKeyPem?: string
+}
+
+async function sign(
+  vc: Omit<VC, "proof">,
+  options: SignOptions = {}
+): Promise<Result> {
+  if (!isPlainObject(vc)) {
+    return errorResult("vc must be a plain object")
+  }
+
+  const privateKeyPem = options.privateKeyPem || testKeyPair.private
+
+  if (typeof privateKeyPem !== "string") {
+    return errorResult("options.privateKeyPem must be a string")
+  }
+
+  const vcWithoutProofStringified = JSON.stringify(vc)
+
+  const data = vcWithoutProofStringified
+
+  const dataBuffer = Buffer.from(data, "utf8")
+  const privateKeyBuffer = pemToBytes(privateKeyPem)
+
+  // Platform independent
+  return await signRS256(dataBuffer, privateKeyBuffer)
+
+  // Platforms with node:crypto support
+  // const privateKey = crypto.createPrivateKey(privateKeyPem)
+  // const signer = crypto.createSign("SHA256")
+  // signer.update(dataBuffer)
+  // signer.end()
+  // return successResult(signer.sign(privateKey).toString("base64"))
 }
 
 type VerifyOptions = {
@@ -292,7 +402,7 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
 
   const publicKeyPem = options.publicKeyPem || defaultPublicKeyPem
 
-  if (publicKeyPem && typeof publicKeyPem !== "string") {
+  if (typeof publicKeyPem !== "string") {
     return errorResult("options.publicKeyPem must be a string")
   }
 
@@ -320,7 +430,7 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
 }
 
 // prettier-ignore
-export { /*   */ setDebug, normalizeText, decode, sha256, timeRange, decrypt, verify }
+export { /*   */ testKeyPair, setDebug, normalizeText, encode, decode, sha256, timeRange, encrypt, decrypt, sign, verify }
 
 // prettier-ignore
-export default { setDebug, normalizeText, decode, sha256, timeRange, decrypt, verify }
+export default { testKeyPair, setDebug, normalizeText, encode, decode, sha256, timeRange, encrypt, decrypt, sign, verify }

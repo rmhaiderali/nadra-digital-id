@@ -4,11 +4,11 @@ A JavaScript library for decoding, decrypting, validating, and verifying NADRA D
 
 It supports:
 
-- Base45 + CBOR + GZIP decoding
-- PIN-based AES decryption
+- Base45 + CBOR + GZIP encoding and decoding
+- PIN-based AES encryption and decryption
 - Time-window brute-range decryption
 - SHA-256 hashing
-- RSA signature verification (RS256)
+- RSA signing and verification (RS256)
 - Text normalization (Urdu/RTL safe)
 
 # 🚀 Installation
@@ -35,12 +35,16 @@ OR
 
 ```js
 import {
+  encode,
   decode,
+  encrypt,
   decrypt,
+  sign,
   verify,
   sha256,
   timeRange,
-  normalizeText
+  normalizeText,
+  testKeyPair
 } from "nadra-digital-id"
 ```
 
@@ -73,6 +77,32 @@ Enable or disable debug logging.
 nadraDigitalId.setDebug(true)
 ```
 
+## 🔹 `encode(data)`
+
+Encodes NADRA Digital ID QR payload.
+
+### Process
+
+```
+Value → CBOR → GZIP → Base45 String
+```
+
+### Parameters
+
+| Name | Type | Description                                      |
+| ---- | ---- | ------------------------------------------------ |
+| data | any  | CBOR-encodable payload (e.g. VC envelope object) |
+
+### Returns
+
+`{ error: string }` OR `{ data: string }` (QR-compatible string with `URN:VC1:` prefix)
+
+### Example
+
+```js
+const { data: encoded, error } = encode(payload)
+```
+
 ## 🔹 `decode(data)`
 
 Decodes NADRA Digital ID QR payload.
@@ -80,23 +110,25 @@ Decodes NADRA Digital ID QR payload.
 ### Process
 
 ```
-Base45 → GZIP → CBOR → JSON
+Base45 String → GZIP → CBOR → decoded value
 ```
+
+`decode` strips an optional `URN:VC1:` prefix before Base45 decoding.
 
 ### Parameters
 
-| Name | Type   | Description |
-| ---- | ------ | ----------- |
-| data | string | QR string   |
+| Name | Type   | Description                                  |
+| ---- | ------ | -------------------------------------------- |
+| data | string | Base45 string (QR payload) must be non-empty |
 
 ### Returns
 
-`{ error: string }` OR `{ data: object }`
+`{ error: string }` OR `{ data: unknown }` (whatever CBOR decodes to)
 
 ### Example
 
 ```js
-const { data: decoded, error } = decode(qrString)
+const { data: decoded, error } = decode(base45String)
 ```
 
 ## 🔹 `sha256(data)`
@@ -142,7 +174,11 @@ options?: {
 
 ### Default Behavior
 
-Generates **3 timestamps** around current (now) time, with **5 minute** step.
+Without `bounds`: generates **3** `Date` values at `now - step`, `now` (rounded to `step`), and `now + step`, with default `step` of **5 minutes** (`ms("5m")`).
+
+With `bounds`: generates every `step` from `start` (floored to step) through `end` (ceiled to step).
+
+If `options` is provided, it must be a plain object. `options.step` must be a positive integer (milliseconds).
 
 ### Returns
 
@@ -154,6 +190,37 @@ Generates **3 timestamps** around current (now) time, with **5 minute** step.
 const { data: timeValues, error } = timeRange()
 ```
 
+## 🔹 `encrypt(data, pin, date)`
+
+Encrypts a string using the same algorithm as `decrypt` (for building payloads or testing round-trips).
+
+### Algorithm
+
+```
+Salt = UTC date formatted as ddMMyyyyHHmm
+Key = PBKDF2(SHA256, pin, salt, 1000 iterations, 16 bytes)
+Cipher = AES-128-ECB
+Output = base64 ciphertext
+```
+
+### Parameters
+
+| Name | Type   | Description        |
+| ---- | ------ | ------------------ |
+| data | string | Plain text to seal |
+| pin  | string | PIN                |
+| date | Date   | Salt time (UTC)    |
+
+### Returns
+
+`{ error: string }` OR `{ data: string }` (base64)
+
+### Example
+
+```js
+const { data: ciphertext, error } = encrypt(text, pin, saltDate)
+```
+
 ## 🔹 `decrypt(data, pin, date)`
 
 Decrypts encrypted NADRA fields.
@@ -161,8 +228,8 @@ Decrypts encrypted NADRA fields.
 ### Algorithm
 
 ```
-Salt = formatted date (UTC)
-Key = PBKDF2(SHA256, pin)
+Salt = UTC date formatted as ddMMyyyyHHmm (same as encrypt)
+Key = PBKDF2(SHA256, pin, salt, 1000 iterations, 16 bytes)
 Cipher = AES-128-ECB
 ```
 
@@ -181,28 +248,56 @@ Cipher = AES-128-ECB
 ### Example
 
 ```js
-const { data, error } = decrypt(encryptedVC, pin, time)
+const { data: text, error } = decrypt(ciphertext, pin, time)
+```
+
+## 🔹 `sign(vc, options?)`
+
+Signs Verifiable Credential.
+
+### Parameters
+
+```ts
+vc: object // plain object; same shape as a VC but without `proof`
+
+options?: {
+  privateKeyPem?: string // defaults to bundled `testKeyPair.private`
+}
+```
+
+`vc` must be a plain object. If `privateKeyPem` is omitted, the bundled test private key is used.
+
+### Returns
+
+`{ error: string }` OR `{ data: string }` (base64 signature bytes, not JWS)
+
+### Example
+
+```js
+const { data: signature, error } = await sign(vcWithoutProof)
 ```
 
 ## 🔹 `verify(vc, options?)`
 
 Verifies Verifiable Credential RSA signature.
 
-### Supported Authorities
+### Default public keys
 
-The library auto-selects public key based on VC type:
+The library picks a bundled SPKI PEM unless `publicKeyPem` is set:
 
-| VC Type              | Authority |
-| -------------------- | --------- |
-| NATIONAL_ID / FRC    | NADRA     |
-| ARMS_LICENSE         | MOI       |
-| VEHICLE_REGISTRATION | ETD       |
-| Others               | NIMS      |
+| Condition in `vc.type` (string array) | Key          |
+| ------------------------------------- | ------------ |
+| includes `NATIONAL_ID` or `FRC`       | NADRA        |
+| includes `ARMS_LICENSE`               | ARMS_LICENSE |
+| includes `VEHICLE_REGISTRATION_CARD`  | ETD          |
+| otherwise                             | NIMS         |
+
+`vc` must be a plain object with `proof` a plain object, `proof.jws` a base64 string, and `vc.type` an array. The signed payload is `JSON.stringify` of the VC **without** the `proof` property; `proof.jws` must be the base64 RSASSA-PKCS1-v1_5 (SHA-256) signature over that UTF-8 string.
 
 ### Parameters
 
 ```ts
-vc: object
+vc: object // full VC including `proof` with base64 `jws`
 
 options?: {
   publicKeyPem?: string
@@ -211,7 +306,7 @@ options?: {
 
 ### Returns
 
-`{ error: string }` OR `{}`
+`{ error: string }` OR `{ data: true }`
 
 ### Example
 
@@ -223,7 +318,7 @@ if (!error) console.log("Signature is valid")
 
 ## 🔹 `normalizeText(text)`
 
-Removes invisible Unicode control characters.
+Strips bidirectional / direction Unicode controls, then normalizes comma–separated segments.
 
 Important for Urdu RTL text validation.
 
@@ -300,18 +395,18 @@ async function main() {
   let vc = null
 
   for (const time of timeValues) {
-    if (!date) {
-      const result = nadraDigitalId.decrypt(decoded.date, pin, time)
-      if (result.data) date = new Date(result.data + "Z")
+    const result = nadraDigitalId.decrypt(decoded.vc, pin, time)
+    if (result.data) {
+      try {
+        vc = JSON.parse(result.data)
+        const r = nadraDigitalId.decrypt(decoded.date, pin, time)
+        if (r.data) date = new Date(r.data)
+        break
+      } catch (e) {}
     }
-    if (!vc) {
-      const result = nadraDigitalId.decrypt(decoded.vc, pin, time)
-      if (result.data) vc = JSON.parse(result.data)
-    }
-    if (date && vc) break
   }
 
-  if (!date || !vc) {
+  if (!vc) {
     console.log("Failed to decrypt data")
     return
   }
@@ -350,27 +445,13 @@ main()
 
 # ⚠️ Common Errors
 
-| Error                      | Cause                              |
-| -------------------------- | ---------------------------------- |
-| Failed to decode data      | Wrong Format / Corrupted data      |
-| Failed to decrypt data     | Wrong PIN / time                   |
-| Failed to verify signature | Tampered VC / Incorrect Public Key |
-
-# 🏗️ Internal Architecture
-
-```
-QR DATA
-   ↓
-decode()
-   ↓
-verify PIN hash
-   ↓
-timeRange()
-   ↓
-decrypt()
-   ↓
-verify()
-```
+| Error                          | Cause                                                       |
+| ------------------------------ | ----------------------------------------------------------- |
+| Failed to decode data          | Wrong format / corrupted payload / invalid Base45 or CBOR   |
+| Failed to decrypt data         | Wrong PIN / salt time / corrupted ciphertext                |
+| Invalid signature              | Tampered VC or wrong key                                    |
+| Failed to verify signature     | Bad key PEM, missing Web Crypto, or verify operation failed |
+| Crypto engine is not available | No `SubtleCrypto` for RSA (e.g. some restricted runtimes)   |
 
 # Flow after QR Code Scan in PAK ID
 
