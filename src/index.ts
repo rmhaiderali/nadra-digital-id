@@ -302,9 +302,9 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
 
   const data = vcWithoutProofStringified
 
-  const dataBuffer = Buffer.from(data, "utf8") as Uint8Array
-  const signatureBuffer = Buffer.from(proof.jws, "base64") as Uint8Array
-  const publicKeyBuffer = pemToBytes(publicKeyPem) as Uint8Array
+  const dataBuffer = Buffer.from(data, "utf8")
+  const signatureBuffer = Buffer.from(proof.jws, "base64")
+  const publicKeyBuffer = pemToBytes(publicKeyPem)
 
   // Platform independent
   return await verifyRS256(dataBuffer, signatureBuffer, publicKeyBuffer)
