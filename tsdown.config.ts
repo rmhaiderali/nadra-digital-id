@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   shims: true,
   clean: true,
-  deps: { skipNodeModulesBundle: true }
+  deps: { skipNodeModulesBundle: true },
 })

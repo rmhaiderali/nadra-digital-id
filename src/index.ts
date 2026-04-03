@@ -186,7 +186,7 @@ function timeRange(options: TimeRangeOptions = {}): Result {
       return errorResult("options.bounds.end must be a valid date")
     if (bounds.start >= bounds.end)
       return errorResult(
-        "options.bounds.start must be less than options.bounds.end"
+        "options.bounds.start must be less than options.bounds.end",
       )
     if ("greedy" in bounds && typeof bounds.greedy !== "boolean")
       return errorResult("options.bounds.greedy must be a boolean")
@@ -211,7 +211,7 @@ function timeRange(options: TimeRangeOptions = {}): Result {
 function encrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
-      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm")
+      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm"),
     )
 
     // Platform independent
@@ -236,7 +236,7 @@ function encrypt(data: string, pin: string, date: Date): Result {
 function decrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
-      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm")
+      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm"),
     )
 
     // Platform independent
@@ -267,7 +267,7 @@ const cryptoEngine = pkijs.getCrypto()
 
 async function signRS256(
   data: Uint8Array,
-  privateKey: Uint8Array
+  privateKey: Uint8Array,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -283,7 +283,7 @@ async function signRS256(
       privateKey,
       algorithm,
       true,
-      ["sign"]
+      ["sign"],
     )
 
     const signature = await cryptoEngine.subtle.sign(algorithm, cryptoKey, data)
@@ -298,7 +298,7 @@ async function signRS256(
 async function verifyRS256(
   data: Uint8Array,
   signature: Uint8Array,
-  publicKey: Uint8Array
+  publicKey: Uint8Array,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -319,14 +319,14 @@ async function verifyRS256(
       publicKey,
       algorithm,
       true,
-      ["verify"]
+      ["verify"],
     )
 
     const isValid = await cryptoEngine.subtle.verify(
       algorithm,
       cryptoKey,
       signature,
-      data
+      data,
     )
 
     if (!isValid) return errorResult("Invalid signature")
@@ -344,7 +344,7 @@ type SignOptions = {
 
 async function sign(
   vc: Omit<VC, "proof">,
-  options: SignOptions = {}
+  options: SignOptions = {},
 ): Promise<Result> {
   if (!isPlainObject(vc)) {
     return errorResult("vc must be a plain object")

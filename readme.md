@@ -44,7 +44,7 @@ import {
   sha256,
   timeRange,
   normalizeText,
-  testKeyPair
+  testKeyPair,
 } from "nadra-digital-id"
 ```
 
@@ -177,7 +177,7 @@ options?: {
 
 Without `bounds`: generates **3** `Date` values at `now - step`, `now` (rounded to `step`), and `now + step`, with default `step` of **5 minutes** (`ms("5m")`).
 
-With `bounds`: you get every tick between your `start` and `end` (snapped to `step`). Normally that's the smallest sensible list. If you turn on `bounds.greedy` it ticks *just* before and after that range.
+With `bounds`: you get every tick between your `start` and `end` (snapped to `step`). Normally that's the smallest sensible list. If you turn on `bounds.greedy` it ticks _just_ before and after that range.
 
 If `options` is provided, it must be a plain object. `options.step` must be a positive integer (milliseconds).
 
@@ -384,7 +384,7 @@ async function main() {
   }
 
   const { data: timeValues, error: timeRangeError } = nadraDigitalId.timeRange({
-    now
+    now,
   })
 
   if (timeRangeError) {
