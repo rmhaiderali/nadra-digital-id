@@ -400,7 +400,7 @@ async function main() {
       try {
         vc = JSON.parse(result.data)
         const r = nadraDigitalId.decrypt(decoded.date, pin, time)
-        if (r.data) date = new Date(r.data)
+        if (r.data) date = new Date(r.data + "Z")
         break
       } catch (e) {}
     }
