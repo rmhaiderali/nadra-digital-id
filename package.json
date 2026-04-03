@@ -10,9 +10,8 @@
     "dist"
   ],
   "scripts": {
-    "lint": "tsc",
-    "build": "tsdown",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "build": "tsdown && prettier dist --write --ignore-path /dev/null"
   },
   "repository": {
     "type": "git",
@@ -41,6 +40,7 @@
     "@types/ms": "^2.1.0",
     "@types/node": "^25.5.0",
     "@types/pako": "^2.0.4",
+    "prettier": "^3.8.1",
     "tsdown": "^0.21.6",
     "typescript": "^6.0.2"
   },

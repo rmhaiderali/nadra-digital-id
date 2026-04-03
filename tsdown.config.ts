@@ -5,6 +5,6 @@ export default defineConfig({
   entry: ["./src/**/*"],
   dts: true,
   shims: true,
-  skipNodeModulesBundle: true,
-  clean: true
+  clean: true,
+  deps: { skipNodeModulesBundle: true }
 })

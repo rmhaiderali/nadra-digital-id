@@ -166,6 +166,7 @@ options?: {
   bounds?: {
     start: Date
     end: Date
+    greedy?: boolean
   }
   step?: number // milliseconds
   now?: Date
@@ -176,7 +177,7 @@ options?: {
 
 Without `bounds`: generates **3** `Date` values at `now - step`, `now` (rounded to `step`), and `now + step`, with default `step` of **5 minutes** (`ms("5m")`).
 
-With `bounds`: generates every `step` from `start` (floored to step) through `end` (ceiled to step).
+With `bounds`: you get every tick between your `start` and `end` (snapped to `step`). Normally that's the smallest sensible list. If you turn on `bounds.greedy` it ticks *just* before and after that range.
 
 If `options` is provided, it must be a plain object. `options.step` must be a positive integer (milliseconds).
 

@@ -159,6 +159,7 @@ type TimeRangeOptions = {
   bounds?: {
     start: Date
     end: Date
+    greedy?: boolean
   }
   step?: number // milliseconds
   now?: Date
@@ -187,9 +188,14 @@ function timeRange(options: TimeRangeOptions = {}): Result {
       return errorResult(
         "options.bounds.start must be less than options.bounds.end"
       )
+    if ("greedy" in bounds && typeof bounds.greedy !== "boolean")
+      return errorResult("options.bounds.greedy must be a boolean")
 
-    const start = floorStep(Number(bounds.start), step)
-    const end = ceilStep(Number(bounds.end), step)
+    const startFn = bounds.greedy ? floorStep : ceilStep
+    const endFn = bounds.greedy ? ceilStep : floorStep
+
+    const start = startFn(Number(bounds.start), step)
+    const end = endFn(Number(bounds.end), step)
     const dateRange = range(start, end, step)
     return successResult(dateRange.map((t) => new Date(t)))
   } else {
