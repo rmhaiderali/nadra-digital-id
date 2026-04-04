@@ -211,7 +211,7 @@ function timeRange(options: TimeRangeOptions = {}): Result {
 function encrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
-      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm"),
+      DateTime.fromJSDate(date).setZone("utc").toFormat("ddMMyyyyHHmm"),
     )
 
     // Platform independent
@@ -236,7 +236,7 @@ function encrypt(data: string, pin: string, date: Date): Result {
 function decrypt(data: string, pin: string, date: Date): Result {
   try {
     const salt = Buffer.from(
-      DateTime.fromJSDate(date, { zone: "utc" }).toFormat("ddMMyyyyHHmm"),
+      DateTime.fromJSDate(date).setZone("utc").toFormat("ddMMyyyyHHmm"),
     )
 
     // Platform independent
