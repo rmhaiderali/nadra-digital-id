@@ -77,6 +77,7 @@ function normalizeText(text: string): Result {
   const data = removeBidiControls(text)
     .split("،")
     .map((s) => s.trim())
+    .filter(Boolean)
     .join("، ")
 
   return successResult(data)
