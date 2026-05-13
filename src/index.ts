@@ -129,7 +129,8 @@ function encode(data: any): Result {
 
   try {
     const cborBuffer = cbor2.encode(data)
-    const gzipBuffer = pako.deflate(cborBuffer)
+    const gzipBuffer = pako.gzip(cborBuffer)
+    gzipBuffer[9] = 0xff
     return successResult(prefix + base45.encode(gzipBuffer))
   } catch (e) {
     if (debug) console.log(e)
@@ -148,7 +149,7 @@ function decode(data: string): Result {
 
   try {
     const gzipBuffer = base45.decode(base45String)
-    const cborBuffer = pako.inflate(gzipBuffer)
+    const cborBuffer = pako.ungzip(gzipBuffer)
     return successResult(cbor2.decode(cborBuffer))
   } catch (e) {
     if (debug) console.log(e)
