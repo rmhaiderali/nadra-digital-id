@@ -17,6 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/rmhaiderali/nadra-digital-id.git"
   },
+  "homepage": "https://rmhaiderali.github.io/nadra-digital-id-demo",
   "keywords": [
     "nadra",
     "digital id",
