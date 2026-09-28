@@ -9,8 +9,8 @@ import { DateTime } from "luxon"
 import base45 from "@rmhaiderali/base45"
 import { ecb } from "@noble/ciphers/aes.js"
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js"
-import { sha256 as sha256Raw } from "@noble/hashes/sha2.js"
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js"
+import { sha256 as sha256Raw, sha384 as sha384Raw } from "@noble/hashes/sha2.js"
 
 type VC = {
   "@context": string[]
@@ -122,6 +122,12 @@ function sha256(data: string): Result {
   // const hash = crypto.createHash("sha256")
   // hash.update(data, "utf8")
   // return successResult(hash.digest("hex"))
+}
+
+function sha384(data: string): Result {
+  if (typeof data !== "string") return errorResult("data must be a string")
+
+  return successResult(bytesToHex(sha384Raw(utf8ToBytes(data))))
 }
 
 function encode(data: any): Result {
@@ -282,13 +288,17 @@ async function signRS256(
 
     const cryptoKey = await cryptoEngine.subtle.importKey(
       "pkcs8",
-      privateKey,
+      privateKey as BufferSource,
       algorithm,
       true,
       ["sign"],
     )
 
-    const signature = await cryptoEngine.subtle.sign(algorithm, cryptoKey, data)
+    const signature = await cryptoEngine.subtle.sign(
+      algorithm,
+      cryptoKey,
+      data as BufferSource,
+    )
 
     return successResult(Buffer.from(signature).toString("base64"))
   } catch (e) {
@@ -318,7 +328,7 @@ async function verifyRS256(
 
     const cryptoKey = await cryptoEngine.subtle.importKey(
       "spki",
-      publicKey,
+      publicKey as BufferSource,
       algorithm,
       true,
       ["verify"],
@@ -327,8 +337,8 @@ async function verifyRS256(
     const isValid = await cryptoEngine.subtle.verify(
       algorithm,
       cryptoKey,
-      signature,
-      data,
+      signature as BufferSource,
+      data as BufferSource,
     )
 
     if (!isValid) return errorResult("Invalid signature")
@@ -438,7 +448,7 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
 }
 
 // prettier-ignore
-export { /*   */ testKeyPair, setDebug, normalizeText, encode, decode, sha256, timeRange, encrypt, decrypt, sign, verify }
+export { /*   */ testKeyPair, setDebug, normalizeText, encode, decode, sha256, sha384, timeRange, encrypt, decrypt, sign, verify }
 
 // prettier-ignore
-export default { testKeyPair, setDebug, normalizeText, encode, decode, sha256, timeRange, encrypt, decrypt, sign, verify }
+export default { testKeyPair, setDebug, normalizeText, encode, decode, sha256, sha384, timeRange, encrypt, decrypt, sign, verify }

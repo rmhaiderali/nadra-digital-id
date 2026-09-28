@@ -42,6 +42,7 @@ import {
   sign,
   verify,
   sha256,
+  sha384,
   timeRange,
   normalizeText,
   testKeyPair,
@@ -131,9 +132,9 @@ Base45 String → GZIP → CBOR → decoded value
 const { data: decoded, error } = decode(base45String)
 ```
 
-## 🔹 `sha256(data)`
+## 🔹 `sha256(data)` `sha384(data)`
 
-Generates SHA-256 hash (hex format).
+Generates SHA hash (hex format).
 
 Used for PIN validation.
 
@@ -354,16 +355,20 @@ const { data, error } = normalizeText(address)
 
 # 🧪 Full Usage Example
 
+[Full Usage Example](https://github.com/rmhaiderali/nadra-digital-id-usage)
+
+### Code
+
 ```js
 import nadraDigitalId from "nadra-digital-id"
+import console from "./utils/betterConsoleLog.js"
+import decrypt from "./utils/matchSaltDateAndDecrypt.js"
 
-async function main() {
-  // nadraDigitalId.setDebug(true)
+// nadraDigitalId.setDebug(true)
 
-  const data = "..."
-  const pin = "0000"
-  const now = new Date("2026-01-01T00:00:00+05:00")
+console.log("NADRA Digital ID Test")
 
+async function main(data, pin, date) {
   const { data: decoded, error: decodeError } = nadraDigitalId.decode(data)
 
   if (decodeError) {
@@ -371,77 +376,147 @@ async function main() {
     return
   }
 
-  const { data: pinHash, error: pinHashError } = nadraDigitalId.sha256(pin)
-
-  if (pinHashError) {
-    console.log(pinHashError)
+  let decodedObject
+  try {
+    decodedObject = JSON.parse(decoded)
+  } catch (e) {
+    console.log("Failed to parse decoded data")
     return
   }
 
-  if (decoded.hash !== pinHash) {
-    console.log("Invalid PIN")
-    return
-  }
+  console.log("Decoded Data", decodedObject)
 
-  const { data: timeValues, error: timeRangeError } = nadraDigitalId.timeRange({
-    now,
-  })
+  let decryptedObject = decodedObject
 
-  if (timeRangeError) {
-    console.log(timeRangeError)
-    return
-  }
+  const isUnencrypted = "credentialSubject" in decodedObject
 
-  let date = null
-  let vc = null
+  if (!isUnencrypted) {
+    const { data, error, notfound } = await decrypt(decodedObject, pin, date)
 
-  for (const time of timeValues) {
-    const result = nadraDigitalId.decrypt(decoded.vc, pin, time)
-    if (result.data) {
-      try {
-        vc = JSON.parse(result.data)
-        const r = nadraDigitalId.decrypt(decoded.date, pin, time)
-        if (r.data) date = new Date(r.data + "Z")
-        break
-      } catch (e) {}
+    if (error) {
+      console.log(error)
+      return
     }
-  }
 
-  if (!vc) {
-    console.log("Failed to decrypt data")
-    return
-  }
+    if (notfound) {
+      console.log("Wrong Creation Date")
+      return
+    }
 
-  console.log("Decrypted VC:", vc)
-  console.log("Decrypted Date:", date)
+    decryptedObject = data.vc
+
+    console.log("Decrypted Data", data)
+  }
 
   // Uncomment following lines to test forged VC scenario
-  // if (vc.credentialSubject?.name?.value) vc.credentialSubject.name.value += " "
-  // else console.log("Cannot forge VC. Field is missing. Try some other field.")
+  // if (decryptedObject.credentialSubject?.id) {
+  //   decryptedObject.credentialSubject.id += " "
+  // } else {
+  //   console.log(
+  //     "Cannot forge VC as vc.credentialSubject.id is missing. Try some other field",
+  //   )
+  // }
 
-  const { error: verificationError } = await nadraDigitalId.verify(vc)
+  const { error: verificationError } =
+    await nadraDigitalId.verify(decryptedObject)
 
-  if (verificationError) {
-    console.log(verificationError)
-    return
-  }
+  const verificationStatus = verificationError ? "Failed" : "Passed"
 
-  console.log("VC verification successful")
+  console.log("Cryptographic Verification: " + verificationStatus)
 
-  if (vc.credentialSubject?.temporaryAddress?.value) {
+  if (decryptedObject.credentialSubject?.temporaryAddress?.value) {
     const { data: normalizedAddress, error: normalizationError } =
-      nadraDigitalId.normalizeText(vc.credentialSubject.temporaryAddress.value)
+      nadraDigitalId.normalizeText(
+        decryptedObject.credentialSubject.temporaryAddress.value,
+      )
 
     if (normalizationError) {
       console.log(normalizationError)
       return
     }
 
-    console.log("Normalized Address:", normalizedAddress)
+    console.log("Normalized Address", normalizedAddress)
+  } else {
+    console.log(
+      "Cannot normalize text as vc.credentialSubject.temporaryAddress.value is missing. Try some other field",
+    )
   }
 }
 
-main()
+const data = "<REDACTED>"
+
+const pin = "1234"
+
+const date = new Date("2026-01-01")
+
+await main(data, pin, date)
+```
+
+### Output
+
+```
+┌───────────────────────┐
+│ NADRA Digital ID Test │
+└───────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Decoded Data                                                                                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {                                                                                                                    │
+│   v: "1.0ce",                                                                                                        │
+│   hash: "<REDACTED>",                                                                                                │
+│   date: "<REDACTED>",                                                                                                │
+│   fields: [ -1 ]                                                                                                     │
+│ }                                                                                                                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Decrypted Data                                                                                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ {                                                                                                                    │
+│   salt: 2026-01-01T00:00:00.000Z,                                                                                    │
+│   date: 2026-01-01T00:00:00.000Z,                                                                                    │
+│   vc: {                                                                                                              │
+│     "@context": [                                                                                                    │
+│       "https://www.w3.org/2018/credentials/v1",                                                                      │
+│       "https://www.w3.org/2018/credentials/examples/v1"                                                              │
+│     ],                                                                                                               │
+│     type: [ "VerifiableCredential", "NATIONAL_ID" ],                                                                 │
+│     id: "100000000000",                                                                                              │
+│     issuer: "NADRA, Pakistan",                                                                                       │
+│     issuanceDate: "2026-01-01T00:00:00.000Z",                                                                        │
+│     expirationDate: "2036-01-01T00:00:00.000Z",                                                                      │
+│     credentialSubject: {                                                                                             │
+│       id: "did:nadra:1000000000000",                                                                                 │
+│       nameEnglish: { label: "Name", value: "<REDACTED>" },                                                           │
+│       nameUrdu: { label: "Name (Urdu)", value: "<REDACTED>" },                                                       │
+│       fatherHusbandNameEnglish: { label: "Father/Husband Name", value: "<REDACTED>" },                               │
+│       fatherHusbandName: { label: "Father/Husband Name (Urdu)", value: "<REDACTED>" },                               │
+│       gender: { label: "Gender", value: "M" },                                                                       │
+│       countryOfStay: { label: "Country", value: "Pakistan" },                                                        │
+│       cnic: { label: "Identity Number", value: "12345-1234567-1" },                                                  │
+│       dob: { label: "Date of Birth", value: "01.01.2000" },                                                          │
+│       issueDate: { label: "Issue Date", value: "01.01.2025" },                                                       │
+│       expiryDate: { label: "Expiry Date", value: "01.01.2035" },                                                     │
+│       temporaryAddress: { label: "Temporary Address", value: "<REDACTED>" },                                         │
+│       permanenetAddress: { label: "Permanent Address", value: "<REDACTED>" }                                         │
+│     },                                                                                                               │
+│     proof: {                                                                                                         │
+│       type: "RsaSignature2018",                                                                                      │
+│       created: "2026-01-01T00:00:00.000Z",                                                                           │
+│       proofPurpose: "assertionMethod",                                                                               │
+│       verificationMethod: "did:nadra:issuer#keys-1",                                                                 │
+│       jws: "<REDACTED>"                                                                                              │
+│     }                                                                                                                │
+│   }                                                                                                                  │
+│ }                                                                                                                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────┐
+│ Cryptographic Verification: Passed │
+└────────────────────────────────────┘
+┌────────────────────┐
+│ Normalized Address │
+├────────────────────┤
+│ <REDACTED>         │
+└────────────────────┘
 ```
 
 # ⚠️ Common Errors

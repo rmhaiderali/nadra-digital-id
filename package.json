@@ -1,11 +1,16 @@
 {
   "name": "nadra-digital-id",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
   "files": [
     "dist"
   ],
