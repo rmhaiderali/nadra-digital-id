@@ -131,13 +131,11 @@ function sha384(data: string): Result {
 }
 
 function encode(data: any): Result {
-  const prefix = "URN:VC1:"
-
   try {
     const cborBuffer = cbor2.encode(data)
     const gzipBuffer = pako.gzip(cborBuffer)
     gzipBuffer[9] = 0xff
-    return successResult(prefix + base45.encode(gzipBuffer))
+    return successResult(base45.encode(gzipBuffer))
   } catch (e) {
     if (debug) console.log(e)
     return errorResult("Failed to encode data")
