@@ -96,7 +96,7 @@ Value → CBOR → GZIP → Base45 String
 
 ### Returns
 
-`{ error: string }` OR `{ data: string }` (QR-compatible string with `URN:VC1:` prefix)
+`{ error: string }` OR `{ data: string }` (QR-compatible base45 string)
 
 ### Example
 
