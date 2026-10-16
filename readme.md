@@ -1,15 +1,14 @@
 # 📘 NADRA Digital ID
 
-A JavaScript library for decoding, decrypting, validating, and verifying NADRA Digital ID QR / VC (Verifiable Credential) data.
+A JavaScript library for decoding, decrypting, and verifying NADRA Digital ID QR / VC (Verifiable Credential) data.
 
 It supports:
 
 - Base45 + CBOR + GZIP encoding and decoding
 - PIN-based AES encryption and decryption
 - Time-window brute-range decryption
-- SHA-256 hashing
-- RSA signing and verification (RS256)
-- Text normalization (Urdu/RTL safe)
+- RSA (RS256) and Ed25519 signing and verification
+- Text normalization (Urdu / RTL safe)
 
 # 🚀 Installation
 
@@ -35,17 +34,16 @@ OR
 
 ```js
 import {
+  keys,
+  sha2,
   encode,
   decode,
   encrypt,
   decrypt,
   sign,
   verify,
-  sha256,
-  sha384,
   timeRange,
   normalizeText,
-  testKeyPair,
 } from "nadra-digital-id"
 ```
 
@@ -57,7 +55,7 @@ import {
 2. Verify PIN hash
 3. Generate time range
 4. Try decrypting VC + date
-5. Verify RSA signature
+5. Verify RS256 / Ed25519 signature
 6. Normalize text fields
 
 # 🧩 API Reference
@@ -132,26 +130,46 @@ Base45 String → GZIP → CBOR → decoded value
 const { data: decoded, error } = decode(base45String)
 ```
 
-## 🔹 `sha256(data)` `sha384(data)`
+## 🔹 `sha2.sha256(data)` `sha2.sha384(data)`
 
-Generates SHA hash (hex format).
+Generates SHA hash.
 
 Used for PIN validation.
 
+<table>
+  <thead>
+    <tr>
+      <th colspan="3">sha2 have following functions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>sha224</td>
+      <td>sha384</td>
+      <td>sha512_224</td>
+    </tr>
+    <tr>
+      <td>sha256</td>
+      <td>sha512</td>
+      <td>sha512_256</td>
+    </tr>
+  </tbody>
+</table>
+
 ### Parameters
 
-| Name | Type   |
-| ---- | ------ |
-| data | string |
+| Name | Type                 |
+| ---- | -------------------- |
+| data | string \| Uint8Array |
 
 ### Returns
 
-`{ error: string }` OR `{ data: string }`
+`Uint8Array`
 
 ### Example
 
 ```js
-const { data: pinHash, error } = sha256("0000")
+const hash = sha2.sha256("0000").toHex()
 ```
 
 ## 🔹 `timeRange(options?)`
@@ -260,10 +278,15 @@ Signs Verifiable Credential.
 ### Parameters
 
 ```ts
-vc: object // plain object; same shape as a VC but without `proof`
+vc: object // plain object; same shape as a VC but without proof property
 
 options?: {
-  privateKeyPem?: string // defaults to bundled `testKeyPair.private`
+  // algorithm defaults to "RS256"
+  algorithm?: "RS256" | "Ed25519",
+  // privateKeyPem defaults to bundled test keys
+  // RS256 =>   keys.private.RSA.TEST
+  // Ed25519 => keys.private.Ed25519.TEST
+  privateKeyPem?: string
 }
 ```
 
@@ -285,23 +308,17 @@ Verifies Verifiable Credential RSA signature.
 
 ### Default public keys
 
-The library picks a bundled SPKI PEM unless `publicKeyPem` is set:
+The library automatically picks bundled public key from `keys.public[algorithm][organization]` unless `publicKeyPem` is set.
 
-| Condition in `vc.type` (string array) | Key          |
-| ------------------------------------- | ------------ |
-| includes `NATIONAL_ID` or `FRC`       | NADRA        |
-| includes `ARMS_LICENSE`               | ARMS_LICENSE |
-| includes `VEHICLE_REGISTRATION_CARD`  | ETD          |
-| otherwise                             | NIMS         |
-
-`vc` must be a plain object with `proof` a plain object, `proof.jws` a base64 string, and `vc.type` an array. The signed payload is `JSON.stringify` of the VC **without** the `proof` property; `proof.jws` must be the base64 RSASSA-PKCS1-v1_5 (SHA-256) signature over that UTF-8 string.
+`vc` must be a plain object with `proof` a plain object, `proof.jws` a base64 string, and `vc.type` an array. The signed payload is `JSON.stringify` of the VC **without** the `proof` property; `proof.jws` must be the base64 RS256 / Ed25519 signature over that UTF-8 string.
 
 ### Parameters
 
 ```ts
-vc: object // full VC including `proof` with base64 `jws`
+vc: object // full VC including "proof" with base64 "jws"
 
 options?: {
+  algorithm?: "RS256" | "Ed25519",
   publicKeyPem?: string
 }
 ```
@@ -326,7 +343,7 @@ Important for Urdu RTL text validation.
 
 ### Cleans:
 
-- RTL/LTR marks
+- RTL / LTR marks
 - Arabic control chars
 - Direction overrides
 
@@ -350,12 +367,10 @@ const { data, error } = normalizeText(address)
 
 ### Signature
 
-- RSASSA-PKCS1-v1_5
-- SHA-256 hash
+- RS256 (RSASSA-PKCS1-v1_5 + SHA-256)
+- Ed25519
 
 # 🧪 Full Usage Example
-
-[Full Usage Example](https://github.com/rmhaiderali/nadra-digital-id-usage)
 
 ### Code
 
@@ -363,6 +378,9 @@ const { data, error } = normalizeText(address)
 import nadraDigitalId from "nadra-digital-id"
 import console from "./utils/betterConsoleLog.js"
 import decrypt from "./utils/matchSaltDateAndDecrypt.js"
+
+// Full Usage Example
+// https://github.com/rmhaiderali/nadra-digital-id-usage
 
 // nadraDigitalId.setDebug(true)
 
@@ -521,17 +539,13 @@ await main(data, pin, date)
 
 # ⚠️ Common Errors
 
-| Error                          | Cause                                                       |
-| ------------------------------ | ----------------------------------------------------------- |
-| Failed to decode data          | Wrong format / corrupted payload / invalid Base45 or CBOR   |
-| Failed to decrypt data         | Wrong PIN / salt time / corrupted ciphertext                |
-| Invalid signature              | Tampered VC or wrong key                                    |
-| Failed to verify signature     | Bad key PEM, missing Web Crypto, or verify operation failed |
-| Crypto engine is not available | No `SubtleCrypto` for RSA (e.g. some restricted runtimes)   |
-
-# Flow after QR Code Scan in PAK ID
-
-![Flow Diagram](https://raw.githubusercontent.com/rmhaiderali/nadra-digital-id/refs/heads/main/flow.svg)
+| Error                          | Cause                                                      |
+| ------------------------------ | ---------------------------------------------------------- |
+| Failed to decode data          | Wrong format / corrupted payload / invalid Base45 or CBOR  |
+| Failed to decrypt data         | Wrong PIN / salt time / corrupted ciphertext               |
+| Invalid signature              | Tampered VC or wrong key                                   |
+| Failed to verify signature     | Bad key PEM / missing Web Crypto / verify operation failed |
+| Crypto engine is not available | No `SubtleCrypto` (e.g. some restricted runtimes)          |
 
 # 📄 License
 

@@ -1,4 +1,3 @@
-// import crypto from "crypto"
 import ms from "ms"
 import pako from "pako"
 import * as cbor2 from "cbor2"
@@ -9,8 +8,29 @@ import { DateTime } from "luxon"
 import base45 from "@rmhaiderali/base45"
 import { ecb } from "@noble/ciphers/aes.js"
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js"
-import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js"
-import { sha256 as sha256Raw, sha384 as sha384Raw } from "@noble/hashes/sha2.js"
+import * as sha2Raw from "@noble/hashes/sha2.js"
+import { bytesToHex, utf8ToBytes, type CHash } from "@noble/hashes/utils.js"
+
+function createHasher(fn: CHash) {
+  return Object.assign(
+    (data: string | Uint8Array) => {
+      const type = typeof data === "string"
+      const bytes: any = fn(type ? utf8ToBytes(data) : data)
+      bytes.toHex ??= () => bytesToHex(bytes)
+      return bytes as Uint8Array
+    },
+    { blockLen: fn.blockLen, outputLen: fn.outputLen, oid: fn.oid },
+  )
+}
+
+const sha2 = {
+  sha224: createHasher(sha2Raw.sha224),
+  sha256: createHasher(sha2Raw.sha256),
+  sha384: createHasher(sha2Raw.sha384),
+  sha512: createHasher(sha2Raw.sha512),
+  sha512_224: createHasher(sha2Raw.sha512_224),
+  sha512_256: createHasher(sha2Raw.sha512_256),
+}
 
 type VC = {
   "@context": string[]
@@ -39,22 +59,151 @@ function errorResult(message: string) {
 
 type Result = ReturnType<typeof successResult> | ReturnType<typeof errorResult>
 
-// prettier-ignore
-const testKeyPair = {
-  private: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjvQOv99Sw627h\nvtDCyqnj7XZ9QDMxQ0eyKGBMAKzScFHe6C0av9XDSs7S2AVPkt537tj5/xgTksqA\nJUwq8SPVe9HwhUZj9qvqd7GEKxvbnaKNNf4Nq6PLhc+aiNSS+vkU9n8ItUZbT6j4\ndGdz7ve1EG4i595QXCU1q/Byf9CUxGevlTq6dilmx+MtDYVbfQR9NWkPVBztEdUa\nzi36az/HB1ec5diPcJGzOmptnCfA51vfJwc6vB08KsR217hHn2o//oIQaWNfZN9O\nUNMARxRJvqjMJtEihrpurkzd0kVBNNrM4Eaf1KXB2ZFpWa7jOUnMRE7rK27wqW0T\nWWGHpJM1AgMBAAECggEAGeE3Y45WybofciDkiVZNgxzPm8EpcB40rg6/jrN+8DUa\nYKniwkjtilFceoJY7CeFB30JhDNUcZj7UR+r7a9UgqSdAWerzZ1RAQaUEjBx7H2X\n5NMvaS9JoE22/1kwSvmhR5wRaJRtB+BgE8fqn7aWyKky0t2lml02T0iYPPLAab9H\nIxn6CodlNyHV/zqbz3aF8pTFQWfp0yAWlgeKhLSu3BNiR6eFy0fDRQQElw8ft5h1\ng8KzR41YlG/+TswFTBT+QDovKKWLrKI+bQGC7gxQ7t82svvTztg976+sRkRaWesZ\ndH5oVm8rQDI3Wo8Zgd7ZKjAakt5kJ4T4Jz0jplYfEQKBgQD2tJMZQ1BYVq7XPT6y\nyLghG8D5rfV5K2V0UrIY64nAY/IoQzDU6fsRZDuqlUtUhT1Eb4weZBp0yNvfLwGR\n8AKuZ8udrvg9GJ88geHF0rtJSzyOQmSoE8CaXWAJ4Dlq7r1JIVmI5J8mMDqizIH8\nwZlKGl8frzd9BOTHb0swfIjb7QKBgQDsUYGnNtp6TVVRIRi1P/fMkeojGTaEcMb5\n6eCzGd+joB9dV2krfhTon7rJ2FwkUEzHmEvmTaE5SuHEX/BFT0Q+aAnwgNXn3Uf6\n2yXjg79awbrjEaeqTEABcWCMyyYgLYixDNxjvudpWcgPDV4G5gaI+7Q+g6zkrEIN\n8QI3UUX7aQKBgF0r/24IFRz3x9p0P+ynj5q5b50cTNvxPsS6wpZUxlaJqJf6IEQZ\nBgAgecRH1AZct7HT6vhDWBaJETjt+MrT+T9C5gxsW0Y/uUvRxaG/n4njxz/25Srx\nIslpwG6aZzTyazxmQvlHVq/GgS6gy+rYdvsckJZXxz4JDhof9yadsdZVAoGAPJM7\n97/Qyu7NwskIC1XFUBPK/4oz9kjuSBtSNLaaI9gkkgmY9MQR2fsvpxOlss0+kR8R\nvYwCmqv+KRcqgKmr5Y9HlPWBXzjSfZP1J1ebEkl8fT4GS1nWQkhspkpgkHj7g963\nE35Y1SFlba5QftYxsKVMc4XPKKKbH/W6SrGzjZkCgYEAnjAC8jkzLv3BbaZr76PO\n1nPOJcD3pFtC+r6TQoTPVJ5ek8/lX7GMk74VLQTf5rgyo1rhhb87O8w0tKMV4aHX\ncP97YrDg1N9GkCqV9Gxnaj5ZWI+0ikT3qaOu59lwjQoVxxXw0lMeCKQEt+1H79zv\nZ65V1+fkOMZzbi5hJAa4LNY=\n-----END PRIVATE KEY-----",
-  public: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA470Dr/fUsOtu4b7Qwsqp\n4+12fUAzMUNHsihgTACs0nBR3ugtGr/Vw0rO0tgFT5Led+7Y+f8YE5LKgCVMKvEj\n1XvR8IVGY/ar6nexhCsb252ijTX+Daujy4XPmojUkvr5FPZ/CLVGW0+o+HRnc+73\ntRBuIufeUFwlNavwcn/QlMRnr5U6unYpZsfjLQ2FW30EfTVpD1Qc7RHVGs4t+ms/\nxwdXnOXYj3CRszpqbZwnwOdb3ycHOrwdPCrEdte4R59qP/6CEGljX2TfTlDTAEcU\nSb6ozCbRIoa6bq5M3dJFQTTazOBGn9SlwdmRaVmu4zlJzERO6ytu8KltE1lhh6ST\nNQIDAQAB\n-----END PUBLIC KEY-----"
+function fullPublicKey(key: string) {
+  return "-----BEGIN PUBLIC KEY-----\n" + key + "\n-----END PUBLIC KEY-----"
 }
 
-// prettier-ignore
-const pubKeys = {
-  // Balochistan, Punjab and Federal Arms License
-  ARMS_LICENSE: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA28dc1Tw7To//89HjvW1n\nx98RlyyypoF1JpRL06IKM+vwAZwFo+xvr7/GR1QHsMzivKuVswKOC6DhPzUwAj1o\nAojvcx43BTHGsYQkyrcILiSBpPH0PxMqfb4VeaGIy6sKcVrJzUeUDJ3PVceVBTtq\ntb42BnEu+NdBvEvIRfBf71enDVdm+h//RXBvL/EBpmC8yS/UI22B90PX6vM6GSaP\n0wocHQhioFKhU1/2d3XKwvjVvDousf+JzxK7EcKerriZRdwZ/BMs/ATiqpw3v9dJ\ncXCTasezZFrPWPHc4ChHF5Gy+18Gu0Gopkilg1m7OBygGOeSsef3QcheIAX32TUR\nGQIDAQAB\n-----END PUBLIC KEY-----",
-  // National Database and Registration Authority
-  NADRA: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo2FG4ZCwxYRdWEkHrmvO\ns/58ra/ekTaoB/9jM6vyg0l0R4yoKLQSSfKuBMt0ONp179lyp3qaKPvDK2XhV14O\nKFKfHTdBJ9NjgFs0fsaMWpMBgR+DU/wmmQqei0H8cB0xnGWsDaKZDdFnHmgpxpHH\nQJf3CHJzGfwex7pCBuAamMS6SOAKQWNyOt6p8pan/d7hvVA7ghvXS1c81I+o+V2b\ng3uPjwh9+pEN8ZI4qKq1wrNLBKk4oexHXZbR6EU5dUek/DP9y3k5iXkTrDfzOQDz\nLi9WlEWV9M+7Rf1O727ku1qg7gyF0WBOZeoTVVOjEwGHpz7p5/dK9zWpGrF9G/TL\naQIDAQAB\n-----END PUBLIC KEY-----",
-  // Excise and Taxation Department
-  ETD: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I\n3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr\n6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm\nL3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W\nF/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk\nlVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf\n9wIDAQAB\n-----END PUBLIC KEY-----",
-  // National Immunization Management System
-  NIMS: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmdtreKdXsUEVPjSK5qD+\nginPM58uVo7xvlUP7gXWVq06U87KhTM0heJn+mpOMc7Qts8G8xNkEwLpXPdwUfxH\nTrwMnSyNx/C023JsvWuO2YevXJq+aBwgSjLcmL2zGhJk/H4S4pDUMLdRlWTXL/aw\nqZJbmk2yTbX66n6pAUPQEnvQ90F4itVJcup0nmdtbcTbZW1QcaPXSmfddab/xjjV\nddsbbTp7P6g3ngJ+6pmi4c3s6G9MVsGaCuiHP19KE2CKaMF3VExKzigX6zzSaHx/\nyBd9C540zmYPNpLHeVZXcI33HOh4o2yz57sd/dUd7ksl0YtrPO4dhmpt13Z/6cWN\nzwIDAQAB\n-----END PUBLIC KEY-----",
+function fullPrivateKey(key: string) {
+  return "-----BEGIN PRIVATE KEY-----\n" + key + "\n-----END PRIVATE KEY-----"
+}
+
+// ETD = Excise & Taxation Department
+// NIMS = National Immunization Management System
+
+const keys = {
+  public: {
+    RSA: {
+      FEDERAL_ARMS_LICENSE: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5XnC/PCR/YPhnryC310g\n" +
+          "C+XegNogbd69LvoI8/BycF4grgNHoNmIiGDDKwrJ+fXrA6/irP15WiliVzc09r00\n" +
+          "U3FfTxVZD6Btg7VBwYrp0HID8FBd1KTvRoelIBiciukcZ/ERPmyNJlHKvIyUdVFY\n" +
+          "ED1YI17Tvu4bsZBY1WFOXt5irKxQpc5zAhf64xbcyIRA7tSZDx7M7tKRsTL4EqzM\n" +
+          "hwjoKjx4zJG2B44HE/fVIbI40NP+I2HwNQqDonHltGRntiJllaUau5rWmtLQLFdp\n" +
+          "GrTGIlQ6bnfVidbz5KaRPpCh9NIEYkQczvfh60QtcBDU7gQ6KWPoaHjAkD2MFGkH\n" +
+          "MQIDAQAB",
+      ),
+      BALOCHISTAN_AND_PUNJAB_ARMS_LICENSE: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA28dc1Tw7To//89HjvW1n\n" +
+          "x98RlyyypoF1JpRL06IKM+vwAZwFo+xvr7/GR1QHsMzivKuVswKOC6DhPzUwAj1o\n" +
+          "Aojvcx43BTHGsYQkyrcILiSBpPH0PxMqfb4VeaGIy6sKcVrJzUeUDJ3PVceVBTtq\n" +
+          "tb42BnEu+NdBvEvIRfBf71enDVdm+h//RXBvL/EBpmC8yS/UI22B90PX6vM6GSaP\n" +
+          "0wocHQhioFKhU1/2d3XKwvjVvDousf+JzxK7EcKerriZRdwZ/BMs/ATiqpw3v9dJ\n" +
+          "cXCTasezZFrPWPHc4ChHF5Gy+18Gu0Gopkilg1m7OBygGOeSsef3QcheIAX32TUR\n" +
+          "GQIDAQAB",
+      ),
+      ISB_VEHICLE_REGISTRATION_CARD: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I\n" +
+          "3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr\n" +
+          "6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm\n" +
+          "L3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W\n" +
+          "F/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk\n" +
+          "lVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf\n" +
+          "9wIDAQAB",
+      ),
+      SINDH_VEHICLE_REGISTRATION_CARD: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwSEeBNYSfTJXetgnrcfQ\n" +
+          "28csqd7k9cHtIVOmTjbUJpvtjfvqmglDQY8jXGASU4FY/wMzIww/VZ85zPr/98hs\n" +
+          "H4G2LJqo+uIFNBBdZYGEX3dkB4D/YKW6fkP27kIHC9i7wNp1DWg77EoOck+nF6zp\n" +
+          "0va2PKeU9nMtF49XJTw2E78I5bADwn1dpaSMTYMAQpt8ndJxiYiPn4GGykUkbu/a\n" +
+          "73D97djVHzPsYpvyGAwnYK0GTdqCmOl1B8EiJ/2qOm4SXsPc2SMw5Hdb3vOrK922\n" +
+          "2p5AOlwapHF/NcOqaQ4YcHob+omX1HFOo7sQFJecmwanb7GMBYeK52uasfGVP6jf\n" +
+          "0wIDAQAB",
+      ),
+      PAK_SURVEY: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6NuQki3PefFExbYDxW5I\n" +
+          "R1cPLC3I8daDFjLFFkyh0AnrCapTyf4l66s4+Py6L48WEjh4KOvB2OtW5h4xJfCE\n" +
+          "hEjhOcd0Ssdkb9NeejZuY0RA7tgaV1J3iW4znuWrmZKs+WZ+o12QApPewMt/Dslh\n" +
+          "QR1IhY7DISH9aMcNgzg4/78EX4xprRAbeaR9dAurSmaB2cozc6gJeY17LpR/U8f0\n" +
+          "iBTtBhVB2LZLv4xFrvyIIgZ0sCt45/QmIMogJUg0EdKh+m42HU2mHWxYzipx/Z7e\n" +
+          "xBlBKRLF2ERW3n5OVd0VaGvZ81b6ByS74MXJofkVIeI1JR1EKfSAZP83uM8w1YpL\n" +
+          "KQIDAQAB",
+      ),
+      NADRA: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo2FG4ZCwxYRdWEkHrmvO\n" +
+          "s/58ra/ekTaoB/9jM6vyg0l0R4yoKLQSSfKuBMt0ONp179lyp3qaKPvDK2XhV14O\n" +
+          "KFKfHTdBJ9NjgFs0fsaMWpMBgR+DU/wmmQqei0H8cB0xnGWsDaKZDdFnHmgpxpHH\n" +
+          "QJf3CHJzGfwex7pCBuAamMS6SOAKQWNyOt6p8pan/d7hvVA7ghvXS1c81I+o+V2b\n" +
+          "g3uPjwh9+pEN8ZI4qKq1wrNLBKk4oexHXZbR6EU5dUek/DP9y3k5iXkTrDfzOQDz\n" +
+          "Li9WlEWV9M+7Rf1O727ku1qg7gyF0WBOZeoTVVOjEwGHpz7p5/dK9zWpGrF9G/TL\n" +
+          "aQIDAQAB",
+      ),
+      ETD: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I\n" +
+          "3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr\n" +
+          "6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm\n" +
+          "L3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W\n" +
+          "F/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk\n" +
+          "lVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf\n" +
+          "9wIDAQAB",
+      ),
+      NIMS: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmdtreKdXsUEVPjSK5qD+\n" +
+          "ginPM58uVo7xvlUP7gXWVq06U87KhTM0heJn+mpOMc7Qts8G8xNkEwLpXPdwUfxH\n" +
+          "TrwMnSyNx/C023JsvWuO2YevXJq+aBwgSjLcmL2zGhJk/H4S4pDUMLdRlWTXL/aw\n" +
+          "qZJbmk2yTbX66n6pAUPQEnvQ90F4itVJcup0nmdtbcTbZW1QcaPXSmfddab/xjjV\n" +
+          "ddsbbTp7P6g3ngJ+6pmi4c3s6G9MVsGaCuiHP19KE2CKaMF3VExKzigX6zzSaHx/\n" +
+          "yBd9C540zmYPNpLHeVZXcI33HOh4o2yz57sd/dUd7ksl0YtrPO4dhmpt13Z/6cWN\n" +
+          "zwIDAQAB",
+      ),
+      TEST: fullPublicKey(
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA470Dr/fUsOtu4b7Qwsqp\n" +
+          "4+12fUAzMUNHsihgTACs0nBR3ugtGr/Vw0rO0tgFT5Led+7Y+f8YE5LKgCVMKvEj\n" +
+          "1XvR8IVGY/ar6nexhCsb252ijTX+Daujy4XPmojUkvr5FPZ/CLVGW0+o+HRnc+73\n" +
+          "tRBuIufeUFwlNavwcn/QlMRnr5U6unYpZsfjLQ2FW30EfTVpD1Qc7RHVGs4t+ms/\n" +
+          "xwdXnOXYj3CRszpqbZwnwOdb3ycHOrwdPCrEdte4R59qP/6CEGljX2TfTlDTAEcU\n" +
+          "Sb6ozCbRIoa6bq5M3dJFQTTazOBGn9SlwdmRaVmu4zlJzERO6ytu8KltE1lhh6ST\n" +
+          "NQIDAQAB",
+      ),
+    },
+    Ed25519: {
+      NADRA: fullPublicKey(
+        "MCowBQYDK2VwAyEAJdqkaYVJKGNKv5/sPPOgI2hB+KHaPhO6v+wJ7TShvi8=",
+      ),
+      NADRA2: fullPublicKey(
+        "MCowBQYDK2VwAyEAL4U2596C+k3KAe8f+YaoJkEDzc9vhBjBVQKlPOty4W4=",
+      ),
+      TEST: fullPublicKey(
+        "MCowBQYDK2VwAyEAZuqWK63qZNS4o0GBsyBAJW27pDctMbO3kkdZWlZokSA=",
+      ),
+    },
+  },
+  private: {
+    RSA: {
+      TEST: fullPrivateKey(
+        "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjvQOv99Sw627h\n" +
+          "vtDCyqnj7XZ9QDMxQ0eyKGBMAKzScFHe6C0av9XDSs7S2AVPkt537tj5/xgTksqA\n" +
+          "JUwq8SPVe9HwhUZj9qvqd7GEKxvbnaKNNf4Nq6PLhc+aiNSS+vkU9n8ItUZbT6j4\n" +
+          "dGdz7ve1EG4i595QXCU1q/Byf9CUxGevlTq6dilmx+MtDYVbfQR9NWkPVBztEdUa\n" +
+          "zi36az/HB1ec5diPcJGzOmptnCfA51vfJwc6vB08KsR217hHn2o//oIQaWNfZN9O\n" +
+          "UNMARxRJvqjMJtEihrpurkzd0kVBNNrM4Eaf1KXB2ZFpWa7jOUnMRE7rK27wqW0T\n" +
+          "WWGHpJM1AgMBAAECggEAGeE3Y45WybofciDkiVZNgxzPm8EpcB40rg6/jrN+8DUa\n" +
+          "YKniwkjtilFceoJY7CeFB30JhDNUcZj7UR+r7a9UgqSdAWerzZ1RAQaUEjBx7H2X\n" +
+          "5NMvaS9JoE22/1kwSvmhR5wRaJRtB+BgE8fqn7aWyKky0t2lml02T0iYPPLAab9H\n" +
+          "Ixn6CodlNyHV/zqbz3aF8pTFQWfp0yAWlgeKhLSu3BNiR6eFy0fDRQQElw8ft5h1\n" +
+          "g8KzR41YlG/+TswFTBT+QDovKKWLrKI+bQGC7gxQ7t82svvTztg976+sRkRaWesZ\n" +
+          "dH5oVm8rQDI3Wo8Zgd7ZKjAakt5kJ4T4Jz0jplYfEQKBgQD2tJMZQ1BYVq7XPT6y\n" +
+          "yLghG8D5rfV5K2V0UrIY64nAY/IoQzDU6fsRZDuqlUtUhT1Eb4weZBp0yNvfLwGR\n" +
+          "8AKuZ8udrvg9GJ88geHF0rtJSzyOQmSoE8CaXWAJ4Dlq7r1JIVmI5J8mMDqizIH8\n" +
+          "wZlKGl8frzd9BOTHb0swfIjb7QKBgQDsUYGnNtp6TVVRIRi1P/fMkeojGTaEcMb5\n" +
+          "6eCzGd+joB9dV2krfhTon7rJ2FwkUEzHmEvmTaE5SuHEX/BFT0Q+aAnwgNXn3Uf6\n" +
+          "2yXjg79awbrjEaeqTEABcWCMyyYgLYixDNxjvudpWcgPDV4G5gaI+7Q+g6zkrEIN\n" +
+          "8QI3UUX7aQKBgF0r/24IFRz3x9p0P+ynj5q5b50cTNvxPsS6wpZUxlaJqJf6IEQZ\n" +
+          "BgAgecRH1AZct7HT6vhDWBaJETjt+MrT+T9C5gxsW0Y/uUvRxaG/n4njxz/25Srx\n" +
+          "IslpwG6aZzTyazxmQvlHVq/GgS6gy+rYdvsckJZXxz4JDhof9yadsdZVAoGAPJM7\n" +
+          "97/Qyu7NwskIC1XFUBPK/4oz9kjuSBtSNLaaI9gkkgmY9MQR2fsvpxOlss0+kR8R\n" +
+          "vYwCmqv+KRcqgKmr5Y9HlPWBXzjSfZP1J1ebEkl8fT4GS1nWQkhspkpgkHj7g963\n" +
+          "E35Y1SFlba5QftYxsKVMc4XPKKKbH/W6SrGzjZkCgYEAnjAC8jkzLv3BbaZr76PO\n" +
+          "1nPOJcD3pFtC+r6TQoTPVJ5ek8/lX7GMk74VLQTf5rgyo1rhhb87O8w0tKMV4aHX\n" +
+          "cP97YrDg1N9GkCqV9Gxnaj5ZWI+0ikT3qaOu59lwjQoVxxXw0lMeCKQEt+1H79zv\n" +
+          "Z65V1+fkOMZzbi5hJAa4LNY=",
+      ),
+    },
+    Ed25519: {
+      TEST: fullPrivateKey(
+        "MC4CAQAwBQYDK2VwBCIEID0oaSlX/AjCKqQYRRdyRNfA4PC9hu8OV3Ecx/VdmDuB",
+      ),
+    },
+  },
 }
 
 let debug = false
@@ -110,24 +259,6 @@ function floorStep(value: number, step: number): number {
 // https://stackoverflow.com/questions/1353684/detecting-an-invalid-date-date-instance-in-javascript
 function isValidDate(d: unknown): boolean {
   return d instanceof Date && !isNaN(d.getTime())
-}
-
-function sha256(data: string): Result {
-  if (typeof data !== "string") return errorResult("data must be a string")
-
-  // Platform independent
-  return successResult(bytesToHex(sha256Raw(utf8ToBytes(data))))
-
-  // Platforms with node:crypto support
-  // const hash = crypto.createHash("sha256")
-  // hash.update(data, "utf8")
-  // return successResult(hash.digest("hex"))
-}
-
-function sha384(data: string): Result {
-  if (typeof data !== "string") return errorResult("data must be a string")
-
-  return successResult(bytesToHex(sha384Raw(utf8ToBytes(data))))
 }
 
 function encode(data: any): Result {
@@ -220,17 +351,10 @@ function encrypt(data: string, pin: string, date: Date): Result {
       DateTime.fromJSDate(date).setZone("utc").toFormat("ddMMyyyyHHmm"),
     )
 
-    // Platform independent
-    const key = pbkdf2(sha256Raw, pin, salt, { c: 1000, dkLen: 16 })
+    const key = pbkdf2(sha2Raw.sha256, pin, salt, { c: 1000, dkLen: 16 })
     const bytes = new TextEncoder().encode(data)
     const encryptedBytes = ecb(key).encrypt(bytes)
     const encrypted = Buffer.from(encryptedBytes).toString("base64")
-
-    // Platforms with node:crypto support
-    // const key = crypto.pbkdf2Sync(pin, salt, 1000, 16, "sha256")
-    // const cipher = crypto.createCipheriv("aes-128-ecb", key, null)
-    // let encrypted = cipher.update(data, "utf8", "base64")
-    // encrypted += cipher.final("base64")
 
     return successResult(encrypted)
   } catch (e) {
@@ -245,17 +369,10 @@ function decrypt(data: string, pin: string, date: Date): Result {
       DateTime.fromJSDate(date).setZone("utc").toFormat("ddMMyyyyHHmm"),
     )
 
-    // Platform independent
-    const key = pbkdf2(sha256Raw, pin, salt, { c: 1000, dkLen: 16 })
+    const key = pbkdf2(sha2Raw.sha256, pin, salt, { c: 1000, dkLen: 16 })
     const bytes = Buffer.from(data, "base64")
     const decryptedBytes = ecb(key).decrypt(bytes)
     const decrypted = new TextDecoder().decode(decryptedBytes)
-
-    // Platforms with node:crypto support
-    // const key = crypto.pbkdf2Sync(pin, salt, 1000, 16, "sha256")
-    // const decipher = crypto.createDecipheriv("aes-128-ecb", key, null)
-    // let decrypted = decipher.update(data, "base64", "utf8")
-    // decrypted += decipher.final("utf8")
 
     return successResult(decrypted)
   } catch (e) {
@@ -271,9 +388,17 @@ function pemToBytes(pem: string): Buffer {
 
 const cryptoEngine = pkijs.getCrypto()
 
-async function signRS256(
+type Algorithm =
+  | AlgorithmIdentifier
+  | RsaHashedImportParams
+  | EcKeyImportParams
+  | HmacImportParams
+  | AesKeyAlgorithm
+
+async function signInternal(
   data: Uint8Array,
   privateKey: Uint8Array,
+  algorithm: Algorithm,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -281,8 +406,6 @@ async function signRS256(
     const asn1 = asn1js.fromBER(privateKey)
 
     if (asn1.offset === -1) return errorResult("Failed to parse private key")
-
-    const algorithm = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
 
     const cryptoKey = await cryptoEngine.subtle.importKey(
       "pkcs8",
@@ -305,10 +428,11 @@ async function signRS256(
   }
 }
 
-async function verifyRS256(
+async function verifyInternal(
   data: Uint8Array,
   signature: Uint8Array,
   publicKey: Uint8Array,
+  algorithm: Algorithm,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -321,8 +445,6 @@ async function verifyRS256(
     //   schema: asn1.result
     // }).toSchema()
     // console.log("Parsed Public Key Info", publicKeyInfo)
-
-    const algorithm = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
 
     const cryptoKey = await cryptoEngine.subtle.importKey(
       "spki",
@@ -348,8 +470,12 @@ async function verifyRS256(
   }
 }
 
+const RS256 = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
+const Ed25519 = { name: "Ed25519" }
+
 type SignOptions = {
   privateKeyPem?: string
+  algorithm?: "RS256" | "Ed25519"
 }
 
 async function sign(
@@ -360,7 +486,25 @@ async function sign(
     return errorResult("vc must be a plain object")
   }
 
-  const privateKeyPem = options.privateKeyPem || testKeyPair.private
+  const algorithm = options.algorithm || "RS256"
+
+  if (typeof algorithm !== "string") {
+    return errorResult("options.algorithm must be a string")
+  }
+
+  const allowedAlgorithms = ["RS256", "Ed25519"]
+
+  if (!allowedAlgorithms.includes(algorithm)) {
+    const allowedString = allowedAlgorithms.join(" or ")
+    return errorResult("options.algorithm must be " + allowedString)
+  }
+
+  const testPrivateKeys = {
+    RS256: keys.private.RSA.TEST,
+    Ed25519: keys.private.Ed25519.TEST,
+  }
+
+  const privateKeyPem = options.privateKeyPem || testPrivateKeys[algorithm]
 
   if (typeof privateKeyPem !== "string") {
     return errorResult("options.privateKeyPem must be a string")
@@ -373,19 +517,14 @@ async function sign(
   const dataBuffer = Buffer.from(data, "utf8")
   const privateKeyBuffer = pemToBytes(privateKeyPem)
 
-  // Platform independent
-  return await signRS256(dataBuffer, privateKeyBuffer)
+  const chosenAlgorithm = { Ed25519, RS256 }[algorithm]
 
-  // Platforms with node:crypto support
-  // const privateKey = crypto.createPrivateKey(privateKeyPem)
-  // const signer = crypto.createSign("SHA256")
-  // signer.update(dataBuffer)
-  // signer.end()
-  // return successResult(signer.sign(privateKey).toString("base64"))
+  return await signInternal(dataBuffer, privateKeyBuffer, chosenAlgorithm)
 }
 
 type VerifyOptions = {
   publicKeyPem?: string
+  algorithm?: "RS256" | "Ed25519"
 }
 
 async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
@@ -401,22 +540,99 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
     return errorResult("vc.proof.jws must be a string")
   }
 
-  if (!Array.isArray(vc.type)) {
+  if (typeof vc.proof.type !== "string") {
+    return errorResult("vc.proof.type must be a string")
+  }
+
+  const vcType = vc.type ?? ["NATIONAL_ID"]
+
+  if (!Array.isArray(vcType)) {
     return errorResult("vc.type must be an array")
   }
 
-  let defaultPublicKeyPem = pubKeys.NIMS
+  let inferredPublicKeyPem = null
+  let inferredAlgorithm: "RS256" | "Ed25519" = "RS256"
 
-  if (vc.type.includes("NATIONAL_ID") || vc.type.includes("FRC"))
-    defaultPublicKeyPem = pubKeys.NADRA
+  if (
+    (vcType.includes("NATIONAL_ID") && vcType.includes("PHYSICAL_ID")) ||
+    (vcType.includes("NATIONAL_ID") && vcType.includes("FACE_ID"))
+  ) {
+    if (/Ed25519/i.test(vc.proof.type)) {
+      inferredAlgorithm = "Ed25519"
+      inferredPublicKeyPem = keys.public.Ed25519.NADRA
+    } else {
+      inferredPublicKeyPem = keys.public.RSA.NADRA
+    }
+  } else if (
+    vcType.includes("NATIONAL_ID") ||
+    vcType.includes("FRC") ||
+    vcType.includes("CRC") ||
+    vcType.includes("NID_CANCEL_CERTIFICATE")
+  ) {
+    if (/Ed25519/i.test(vc.proof.type)) {
+      inferredAlgorithm = "Ed25519"
+      inferredPublicKeyPem = keys.public.Ed25519.NADRA
+    } else {
+      inferredPublicKeyPem = keys.public.RSA.NADRA
+    }
+  } else if (
+    vcType.includes("BALOCHISTAN_ARMS_LICENSE") ||
+    vcType.includes("PUNJAB_ARMS_LICENSE")
+  ) {
+    inferredPublicKeyPem = keys.public.RSA.BALOCHISTAN_AND_PUNJAB_ARMS_LICENSE
+  } else if (vcType.includes("FEDERAL_ARMS_LICENSE")) {
+    inferredPublicKeyPem = keys.public.RSA.FEDERAL_ARMS_LICENSE
+  } else if (vcType.includes("ISB_VEHICLE_REGISTRATION_CARD")) {
+    inferredPublicKeyPem = keys.public.RSA.ISB_VEHICLE_REGISTRATION_CARD
+  } else if (vcType.includes("SINDH_VEHICLE_REGISTRATION_CARD")) {
+    inferredPublicKeyPem = keys.public.RSA.SINDH_VEHICLE_REGISTRATION_CARD
+  } else if (
+    vcType.includes("PAK_SURVEY") &&
+    vcType.includes("EMPLOYEE_CARD")
+  ) {
+    inferredPublicKeyPem = keys.public.RSA.PAK_SURVEY
+  } else if (
+    vcType.includes("NADRA_EMPLOYEE") &&
+    vcType.includes("EMPLOYEE_CARD")
+  ) {
+    inferredPublicKeyPem = keys.public.RSA.NADRA
+  } else if (
+    vcType.includes("POLIO_VACCINATION_PASS") ||
+    vcType.includes("YELLOW_FEVER_VACCINATION_PASS") ||
+    vcType.includes("COVID_VACCINATION_PASS") ||
+    vcType.includes("COVID") ||
+    vcType.includes("YELLOW_FEVER") ||
+    vcType.includes("POLIO") ||
+    vcType.includes("POLIO_IPV") ||
+    vcType.includes("INFLUENZA") ||
+    vcType.includes("MENINGITIS")
+  ) {
+    inferredPublicKeyPem = keys.public.RSA.NIMS
+  } else if (
+    vcType.includes("BIRTH_CERTIFICATE") ||
+    vcType.includes("DEATH_CERTIFICATE") ||
+    vcType.includes("MARRIAGE_CERTIFICATE") ||
+    vcType.includes("DIVORCE_CERTIFICATE") ||
+    vcType.includes("CANCELLATION_CERTIFICATE")
+  ) {
+    inferredAlgorithm = "Ed25519"
+    inferredPublicKeyPem = keys.public.Ed25519.NADRA2
+  }
 
-  if (vc.type.join(",").includes("ARMS_LICENSE"))
-    defaultPublicKeyPem = pubKeys.ARMS_LICENSE
+  const algorithm = options.algorithm || inferredAlgorithm
 
-  if (vc.type.includes("VEHICLE_REGISTRATION_CARD"))
-    defaultPublicKeyPem = pubKeys.ETD
+  if (typeof algorithm !== "string") {
+    return errorResult("options.algorithm must be a string")
+  }
 
-  const publicKeyPem = options.publicKeyPem || defaultPublicKeyPem
+  const allowedAlgorithms = ["RS256", "Ed25519"]
+
+  if (!allowedAlgorithms.includes(algorithm)) {
+    const allowedString = allowedAlgorithms.join(" or ")
+    return errorResult("options.algorithm must be " + allowedString)
+  }
+
+  const publicKeyPem = options.publicKeyPem || inferredPublicKeyPem
 
   if (typeof publicKeyPem !== "string") {
     return errorResult("options.publicKeyPem must be a string")
@@ -432,21 +648,18 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
   const signatureBuffer = Buffer.from(proof.jws, "base64")
   const publicKeyBuffer = pemToBytes(publicKeyPem)
 
-  // Platform independent
-  return await verifyRS256(dataBuffer, signatureBuffer, publicKeyBuffer)
+  const chosenAlgorithm = { Ed25519, RS256 }[algorithm]
 
-  // Platforms with node:crypto support
-  // const publicKey = crypto.createPublicKey(publicKeyPem)
-  // const verifier = crypto.createVerify("SHA256")
-  // verifier.update(dataBuffer)
-  // verifier.end()
-  // return verifier.verify(publicKey, signatureBuffer)
-  //   ? successResult(true)
-  //   : errorResult("Failed to verify signature")
+  return await verifyInternal(
+    dataBuffer,
+    signatureBuffer,
+    publicKeyBuffer,
+    chosenAlgorithm,
+  )
 }
 
 // prettier-ignore
-export { /*   */ testKeyPair, setDebug, normalizeText, encode, decode, sha256, sha384, timeRange, encrypt, decrypt, sign, verify }
+export { /*   */ sha2, keys, setDebug, normalizeText, encode, decode, timeRange, encrypt, decrypt, sign, verify }
 
 // prettier-ignore
-export default { testKeyPair, setDebug, normalizeText, encode, decode, sha256, sha384, timeRange, encrypt, decrypt, sign, verify }
+export default { sha2, keys, setDebug, normalizeText, encode, decode, timeRange, encrypt, decrypt, sign, verify }
