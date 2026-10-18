@@ -12,15 +12,14 @@ import * as sha2Raw from "@noble/hashes/sha2.js"
 import { bytesToHex, utf8ToBytes, type CHash } from "@noble/hashes/utils.js"
 
 function createHasher(fn: CHash) {
-  return Object.assign(
-    (data: string | Uint8Array) => {
-      const type = typeof data === "string"
-      const bytes: any = fn(type ? utf8ToBytes(data) : data)
-      bytes.toHex ??= () => bytesToHex(bytes)
-      return bytes as Uint8Array
-    },
-    { blockLen: fn.blockLen, outputLen: fn.outputLen, oid: fn.oid },
-  )
+  function fn2(data: string | Uint8Array) {
+    const type = typeof data === "string"
+    const bytes: any = fn(type ? utf8ToBytes(data) : data)
+    bytes.toHex ??= () => bytesToHex(bytes)
+    return bytes as Uint8Array
+  }
+  const hash = fn2("") as Uint8Array & { toHex: () => string }
+  return Object.assign(fn2, { hexLength: hash.toHex().length })
 }
 
 const sha2 = {
@@ -28,8 +27,6 @@ const sha2 = {
   sha256: createHasher(sha2Raw.sha256),
   sha384: createHasher(sha2Raw.sha384),
   sha512: createHasher(sha2Raw.sha512),
-  sha512_224: createHasher(sha2Raw.sha512_224),
-  sha512_256: createHasher(sha2Raw.sha512_256),
 }
 
 type VC = {

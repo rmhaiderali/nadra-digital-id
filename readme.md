@@ -139,19 +139,17 @@ Used for PIN validation.
 <table>
   <thead>
     <tr>
-      <th colspan="3">sha2 have following functions</th>
+      <th colspan="2">sha2 methods</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>sha224</td>
-      <td>sha384</td>
-      <td>sha512_224</td>
+      <td>sha256</td>
     </tr>
     <tr>
-      <td>sha256</td>
+      <td>sha384</td>
       <td>sha512</td>
-      <td>sha512_256</td>
     </tr>
   </tbody>
 </table>
