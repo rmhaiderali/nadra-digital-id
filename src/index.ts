@@ -37,8 +37,8 @@ type VC = {
   type: string[]
   id: string
   issuer: string
-  issuanceDate: string
-  expirationDate: string
+  issuanceDate: string | { seconds: number; nanos: number }
+  expirationDate: string | { seconds: number; nanos: number }
   credentialSubject: unknown
   proof: {
     type: string
@@ -59,12 +59,16 @@ function errorResult(message: string) {
 
 type Result = ReturnType<typeof successResult> | ReturnType<typeof errorResult>
 
-function fullPublicKey(key: string) {
-  return "-----BEGIN PUBLIC KEY-----\n" + key + "\n-----END PUBLIC KEY-----"
+function fullPublicKey(...args: string[]) {
+  args.unshift("-----BEGIN PUBLIC KEY-----")
+  args.push("-----END PUBLIC KEY-----")
+  return args.join("\n")
 }
 
-function fullPrivateKey(key: string) {
-  return "-----BEGIN PRIVATE KEY-----\n" + key + "\n-----END PRIVATE KEY-----"
+function fullPrivateKey(...args: string[]) {
+  args.unshift("-----BEGIN PRIVATE KEY-----")
+  args.push("-----END PRIVATE KEY-----")
+  return args.join("\n")
 }
 
 // ETD = Excise & Taxation Department
@@ -74,85 +78,76 @@ const keys = {
   public: {
     RSA: {
       FEDERAL_ARMS_LICENSE: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5XnC/PCR/YPhnryC310g\n" +
-          "C+XegNogbd69LvoI8/BycF4grgNHoNmIiGDDKwrJ+fXrA6/irP15WiliVzc09r00\n" +
-          "U3FfTxVZD6Btg7VBwYrp0HID8FBd1KTvRoelIBiciukcZ/ERPmyNJlHKvIyUdVFY\n" +
-          "ED1YI17Tvu4bsZBY1WFOXt5irKxQpc5zAhf64xbcyIRA7tSZDx7M7tKRsTL4EqzM\n" +
-          "hwjoKjx4zJG2B44HE/fVIbI40NP+I2HwNQqDonHltGRntiJllaUau5rWmtLQLFdp\n" +
-          "GrTGIlQ6bnfVidbz5KaRPpCh9NIEYkQczvfh60QtcBDU7gQ6KWPoaHjAkD2MFGkH\n" +
-          "MQIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5XnC/PCR/YPhnryC310g",
+        "C+XegNogbd69LvoI8/BycF4grgNHoNmIiGDDKwrJ+fXrA6/irP15WiliVzc09r00",
+        "U3FfTxVZD6Btg7VBwYrp0HID8FBd1KTvRoelIBiciukcZ/ERPmyNJlHKvIyUdVFY",
+        "ED1YI17Tvu4bsZBY1WFOXt5irKxQpc5zAhf64xbcyIRA7tSZDx7M7tKRsTL4EqzM",
+        "hwjoKjx4zJG2B44HE/fVIbI40NP+I2HwNQqDonHltGRntiJllaUau5rWmtLQLFdp",
+        "GrTGIlQ6bnfVidbz5KaRPpCh9NIEYkQczvfh60QtcBDU7gQ6KWPoaHjAkD2MFGkH",
+        "MQIDAQAB",
       ),
       BALOCHISTAN_AND_PUNJAB_ARMS_LICENSE: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA28dc1Tw7To//89HjvW1n\n" +
-          "x98RlyyypoF1JpRL06IKM+vwAZwFo+xvr7/GR1QHsMzivKuVswKOC6DhPzUwAj1o\n" +
-          "Aojvcx43BTHGsYQkyrcILiSBpPH0PxMqfb4VeaGIy6sKcVrJzUeUDJ3PVceVBTtq\n" +
-          "tb42BnEu+NdBvEvIRfBf71enDVdm+h//RXBvL/EBpmC8yS/UI22B90PX6vM6GSaP\n" +
-          "0wocHQhioFKhU1/2d3XKwvjVvDousf+JzxK7EcKerriZRdwZ/BMs/ATiqpw3v9dJ\n" +
-          "cXCTasezZFrPWPHc4ChHF5Gy+18Gu0Gopkilg1m7OBygGOeSsef3QcheIAX32TUR\n" +
-          "GQIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA28dc1Tw7To//89HjvW1n",
+        "x98RlyyypoF1JpRL06IKM+vwAZwFo+xvr7/GR1QHsMzivKuVswKOC6DhPzUwAj1o",
+        "Aojvcx43BTHGsYQkyrcILiSBpPH0PxMqfb4VeaGIy6sKcVrJzUeUDJ3PVceVBTtq",
+        "tb42BnEu+NdBvEvIRfBf71enDVdm+h//RXBvL/EBpmC8yS/UI22B90PX6vM6GSaP",
+        "0wocHQhioFKhU1/2d3XKwvjVvDousf+JzxK7EcKerriZRdwZ/BMs/ATiqpw3v9dJ",
+        "cXCTasezZFrPWPHc4ChHF5Gy+18Gu0Gopkilg1m7OBygGOeSsef3QcheIAX32TUR",
+        "GQIDAQAB",
       ),
       ISB_VEHICLE_REGISTRATION_CARD: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I\n" +
-          "3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr\n" +
-          "6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm\n" +
-          "L3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W\n" +
-          "F/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk\n" +
-          "lVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf\n" +
-          "9wIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I",
+        "3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr",
+        "6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm",
+        "L3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W",
+        "F/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk",
+        "lVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf",
+        "9wIDAQAB",
       ),
       SINDH_VEHICLE_REGISTRATION_CARD: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwSEeBNYSfTJXetgnrcfQ\n" +
-          "28csqd7k9cHtIVOmTjbUJpvtjfvqmglDQY8jXGASU4FY/wMzIww/VZ85zPr/98hs\n" +
-          "H4G2LJqo+uIFNBBdZYGEX3dkB4D/YKW6fkP27kIHC9i7wNp1DWg77EoOck+nF6zp\n" +
-          "0va2PKeU9nMtF49XJTw2E78I5bADwn1dpaSMTYMAQpt8ndJxiYiPn4GGykUkbu/a\n" +
-          "73D97djVHzPsYpvyGAwnYK0GTdqCmOl1B8EiJ/2qOm4SXsPc2SMw5Hdb3vOrK922\n" +
-          "2p5AOlwapHF/NcOqaQ4YcHob+omX1HFOo7sQFJecmwanb7GMBYeK52uasfGVP6jf\n" +
-          "0wIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwSEeBNYSfTJXetgnrcfQ",
+        "28csqd7k9cHtIVOmTjbUJpvtjfvqmglDQY8jXGASU4FY/wMzIww/VZ85zPr/98hs",
+        "H4G2LJqo+uIFNBBdZYGEX3dkB4D/YKW6fkP27kIHC9i7wNp1DWg77EoOck+nF6zp",
+        "0va2PKeU9nMtF49XJTw2E78I5bADwn1dpaSMTYMAQpt8ndJxiYiPn4GGykUkbu/a",
+        "73D97djVHzPsYpvyGAwnYK0GTdqCmOl1B8EiJ/2qOm4SXsPc2SMw5Hdb3vOrK922",
+        "2p5AOlwapHF/NcOqaQ4YcHob+omX1HFOo7sQFJecmwanb7GMBYeK52uasfGVP6jf",
+        "0wIDAQAB",
       ),
       PAK_SURVEY: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6NuQki3PefFExbYDxW5I\n" +
-          "R1cPLC3I8daDFjLFFkyh0AnrCapTyf4l66s4+Py6L48WEjh4KOvB2OtW5h4xJfCE\n" +
-          "hEjhOcd0Ssdkb9NeejZuY0RA7tgaV1J3iW4znuWrmZKs+WZ+o12QApPewMt/Dslh\n" +
-          "QR1IhY7DISH9aMcNgzg4/78EX4xprRAbeaR9dAurSmaB2cozc6gJeY17LpR/U8f0\n" +
-          "iBTtBhVB2LZLv4xFrvyIIgZ0sCt45/QmIMogJUg0EdKh+m42HU2mHWxYzipx/Z7e\n" +
-          "xBlBKRLF2ERW3n5OVd0VaGvZ81b6ByS74MXJofkVIeI1JR1EKfSAZP83uM8w1YpL\n" +
-          "KQIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6NuQki3PefFExbYDxW5I",
+        "R1cPLC3I8daDFjLFFkyh0AnrCapTyf4l66s4+Py6L48WEjh4KOvB2OtW5h4xJfCE",
+        "hEjhOcd0Ssdkb9NeejZuY0RA7tgaV1J3iW4znuWrmZKs+WZ+o12QApPewMt/Dslh",
+        "QR1IhY7DISH9aMcNgzg4/78EX4xprRAbeaR9dAurSmaB2cozc6gJeY17LpR/U8f0",
+        "iBTtBhVB2LZLv4xFrvyIIgZ0sCt45/QmIMogJUg0EdKh+m42HU2mHWxYzipx/Z7e",
+        "xBlBKRLF2ERW3n5OVd0VaGvZ81b6ByS74MXJofkVIeI1JR1EKfSAZP83uM8w1YpL",
+        "KQIDAQAB",
       ),
       NADRA: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo2FG4ZCwxYRdWEkHrmvO\n" +
-          "s/58ra/ekTaoB/9jM6vyg0l0R4yoKLQSSfKuBMt0ONp179lyp3qaKPvDK2XhV14O\n" +
-          "KFKfHTdBJ9NjgFs0fsaMWpMBgR+DU/wmmQqei0H8cB0xnGWsDaKZDdFnHmgpxpHH\n" +
-          "QJf3CHJzGfwex7pCBuAamMS6SOAKQWNyOt6p8pan/d7hvVA7ghvXS1c81I+o+V2b\n" +
-          "g3uPjwh9+pEN8ZI4qKq1wrNLBKk4oexHXZbR6EU5dUek/DP9y3k5iXkTrDfzOQDz\n" +
-          "Li9WlEWV9M+7Rf1O727ku1qg7gyF0WBOZeoTVVOjEwGHpz7p5/dK9zWpGrF9G/TL\n" +
-          "aQIDAQAB",
-      ),
-      ETD: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwgJocupiEWUDu1/JkI5I\n" +
-          "3cVH5jLNcDpYVXlzQlBoX0DeS5eeUzTshqPaEKe1PO/LMXPgY1K9Goig7n/S7vFr\n" +
-          "6GDbviT3BbDGhuG669iscj0yLZDsXMUCChKM5hzz0H2sXIK3sUzpN7nhRkgpfMLm\n" +
-          "L3Hr2ZVehSlHco4rAgj5Q/4SN8gBkPyNa+quOcNSfPFqA8LWtuBAK+S1objlQM/W\n" +
-          "F/EctchUg5VT4wvW+ywHXi8a1ZdEzuDp4e1FgJkmrKtHVoZB7ktUbes3Kv0uf0wk\n" +
-          "lVHs5B0KyWIODBiXMbFR4VcEHFEMzoRAwGwJ9S10SROVq/JAmu4ymsV0NdMdUmRf\n" +
-          "9wIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo2FG4ZCwxYRdWEkHrmvO",
+        "s/58ra/ekTaoB/9jM6vyg0l0R4yoKLQSSfKuBMt0ONp179lyp3qaKPvDK2XhV14O",
+        "KFKfHTdBJ9NjgFs0fsaMWpMBgR+DU/wmmQqei0H8cB0xnGWsDaKZDdFnHmgpxpHH",
+        "QJf3CHJzGfwex7pCBuAamMS6SOAKQWNyOt6p8pan/d7hvVA7ghvXS1c81I+o+V2b",
+        "g3uPjwh9+pEN8ZI4qKq1wrNLBKk4oexHXZbR6EU5dUek/DP9y3k5iXkTrDfzOQDz",
+        "Li9WlEWV9M+7Rf1O727ku1qg7gyF0WBOZeoTVVOjEwGHpz7p5/dK9zWpGrF9G/TL",
+        "aQIDAQAB",
       ),
       NIMS: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmdtreKdXsUEVPjSK5qD+\n" +
-          "ginPM58uVo7xvlUP7gXWVq06U87KhTM0heJn+mpOMc7Qts8G8xNkEwLpXPdwUfxH\n" +
-          "TrwMnSyNx/C023JsvWuO2YevXJq+aBwgSjLcmL2zGhJk/H4S4pDUMLdRlWTXL/aw\n" +
-          "qZJbmk2yTbX66n6pAUPQEnvQ90F4itVJcup0nmdtbcTbZW1QcaPXSmfddab/xjjV\n" +
-          "ddsbbTp7P6g3ngJ+6pmi4c3s6G9MVsGaCuiHP19KE2CKaMF3VExKzigX6zzSaHx/\n" +
-          "yBd9C540zmYPNpLHeVZXcI33HOh4o2yz57sd/dUd7ksl0YtrPO4dhmpt13Z/6cWN\n" +
-          "zwIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmdtreKdXsUEVPjSK5qD+",
+        "ginPM58uVo7xvlUP7gXWVq06U87KhTM0heJn+mpOMc7Qts8G8xNkEwLpXPdwUfxH",
+        "TrwMnSyNx/C023JsvWuO2YevXJq+aBwgSjLcmL2zGhJk/H4S4pDUMLdRlWTXL/aw",
+        "qZJbmk2yTbX66n6pAUPQEnvQ90F4itVJcup0nmdtbcTbZW1QcaPXSmfddab/xjjV",
+        "ddsbbTp7P6g3ngJ+6pmi4c3s6G9MVsGaCuiHP19KE2CKaMF3VExKzigX6zzSaHx/",
+        "yBd9C540zmYPNpLHeVZXcI33HOh4o2yz57sd/dUd7ksl0YtrPO4dhmpt13Z/6cWN",
+        "zwIDAQAB",
       ),
       TEST: fullPublicKey(
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA470Dr/fUsOtu4b7Qwsqp\n" +
-          "4+12fUAzMUNHsihgTACs0nBR3ugtGr/Vw0rO0tgFT5Led+7Y+f8YE5LKgCVMKvEj\n" +
-          "1XvR8IVGY/ar6nexhCsb252ijTX+Daujy4XPmojUkvr5FPZ/CLVGW0+o+HRnc+73\n" +
-          "tRBuIufeUFwlNavwcn/QlMRnr5U6unYpZsfjLQ2FW30EfTVpD1Qc7RHVGs4t+ms/\n" +
-          "xwdXnOXYj3CRszpqbZwnwOdb3ycHOrwdPCrEdte4R59qP/6CEGljX2TfTlDTAEcU\n" +
-          "Sb6ozCbRIoa6bq5M3dJFQTTazOBGn9SlwdmRaVmu4zlJzERO6ytu8KltE1lhh6ST\n" +
-          "NQIDAQAB",
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA470Dr/fUsOtu4b7Qwsqp",
+        "4+12fUAzMUNHsihgTACs0nBR3ugtGr/Vw0rO0tgFT5Led+7Y+f8YE5LKgCVMKvEj",
+        "1XvR8IVGY/ar6nexhCsb252ijTX+Daujy4XPmojUkvr5FPZ/CLVGW0+o+HRnc+73",
+        "tRBuIufeUFwlNavwcn/QlMRnr5U6unYpZsfjLQ2FW30EfTVpD1Qc7RHVGs4t+ms/",
+        "xwdXnOXYj3CRszpqbZwnwOdb3ycHOrwdPCrEdte4R59qP/6CEGljX2TfTlDTAEcU",
+        "Sb6ozCbRIoa6bq5M3dJFQTTazOBGn9SlwdmRaVmu4zlJzERO6ytu8KltE1lhh6ST",
+        "NQIDAQAB",
       ),
     },
     Ed25519: {
@@ -170,32 +165,32 @@ const keys = {
   private: {
     RSA: {
       TEST: fullPrivateKey(
-        "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjvQOv99Sw627h\n" +
-          "vtDCyqnj7XZ9QDMxQ0eyKGBMAKzScFHe6C0av9XDSs7S2AVPkt537tj5/xgTksqA\n" +
-          "JUwq8SPVe9HwhUZj9qvqd7GEKxvbnaKNNf4Nq6PLhc+aiNSS+vkU9n8ItUZbT6j4\n" +
-          "dGdz7ve1EG4i595QXCU1q/Byf9CUxGevlTq6dilmx+MtDYVbfQR9NWkPVBztEdUa\n" +
-          "zi36az/HB1ec5diPcJGzOmptnCfA51vfJwc6vB08KsR217hHn2o//oIQaWNfZN9O\n" +
-          "UNMARxRJvqjMJtEihrpurkzd0kVBNNrM4Eaf1KXB2ZFpWa7jOUnMRE7rK27wqW0T\n" +
-          "WWGHpJM1AgMBAAECggEAGeE3Y45WybofciDkiVZNgxzPm8EpcB40rg6/jrN+8DUa\n" +
-          "YKniwkjtilFceoJY7CeFB30JhDNUcZj7UR+r7a9UgqSdAWerzZ1RAQaUEjBx7H2X\n" +
-          "5NMvaS9JoE22/1kwSvmhR5wRaJRtB+BgE8fqn7aWyKky0t2lml02T0iYPPLAab9H\n" +
-          "Ixn6CodlNyHV/zqbz3aF8pTFQWfp0yAWlgeKhLSu3BNiR6eFy0fDRQQElw8ft5h1\n" +
-          "g8KzR41YlG/+TswFTBT+QDovKKWLrKI+bQGC7gxQ7t82svvTztg976+sRkRaWesZ\n" +
-          "dH5oVm8rQDI3Wo8Zgd7ZKjAakt5kJ4T4Jz0jplYfEQKBgQD2tJMZQ1BYVq7XPT6y\n" +
-          "yLghG8D5rfV5K2V0UrIY64nAY/IoQzDU6fsRZDuqlUtUhT1Eb4weZBp0yNvfLwGR\n" +
-          "8AKuZ8udrvg9GJ88geHF0rtJSzyOQmSoE8CaXWAJ4Dlq7r1JIVmI5J8mMDqizIH8\n" +
-          "wZlKGl8frzd9BOTHb0swfIjb7QKBgQDsUYGnNtp6TVVRIRi1P/fMkeojGTaEcMb5\n" +
-          "6eCzGd+joB9dV2krfhTon7rJ2FwkUEzHmEvmTaE5SuHEX/BFT0Q+aAnwgNXn3Uf6\n" +
-          "2yXjg79awbrjEaeqTEABcWCMyyYgLYixDNxjvudpWcgPDV4G5gaI+7Q+g6zkrEIN\n" +
-          "8QI3UUX7aQKBgF0r/24IFRz3x9p0P+ynj5q5b50cTNvxPsS6wpZUxlaJqJf6IEQZ\n" +
-          "BgAgecRH1AZct7HT6vhDWBaJETjt+MrT+T9C5gxsW0Y/uUvRxaG/n4njxz/25Srx\n" +
-          "IslpwG6aZzTyazxmQvlHVq/GgS6gy+rYdvsckJZXxz4JDhof9yadsdZVAoGAPJM7\n" +
-          "97/Qyu7NwskIC1XFUBPK/4oz9kjuSBtSNLaaI9gkkgmY9MQR2fsvpxOlss0+kR8R\n" +
-          "vYwCmqv+KRcqgKmr5Y9HlPWBXzjSfZP1J1ebEkl8fT4GS1nWQkhspkpgkHj7g963\n" +
-          "E35Y1SFlba5QftYxsKVMc4XPKKKbH/W6SrGzjZkCgYEAnjAC8jkzLv3BbaZr76PO\n" +
-          "1nPOJcD3pFtC+r6TQoTPVJ5ek8/lX7GMk74VLQTf5rgyo1rhhb87O8w0tKMV4aHX\n" +
-          "cP97YrDg1N9GkCqV9Gxnaj5ZWI+0ikT3qaOu59lwjQoVxxXw0lMeCKQEt+1H79zv\n" +
-          "Z65V1+fkOMZzbi5hJAa4LNY=",
+        "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjvQOv99Sw627h",
+        "vtDCyqnj7XZ9QDMxQ0eyKGBMAKzScFHe6C0av9XDSs7S2AVPkt537tj5/xgTksqA",
+        "JUwq8SPVe9HwhUZj9qvqd7GEKxvbnaKNNf4Nq6PLhc+aiNSS+vkU9n8ItUZbT6j4",
+        "dGdz7ve1EG4i595QXCU1q/Byf9CUxGevlTq6dilmx+MtDYVbfQR9NWkPVBztEdUa",
+        "zi36az/HB1ec5diPcJGzOmptnCfA51vfJwc6vB08KsR217hHn2o//oIQaWNfZN9O",
+        "UNMARxRJvqjMJtEihrpurkzd0kVBNNrM4Eaf1KXB2ZFpWa7jOUnMRE7rK27wqW0T",
+        "WWGHpJM1AgMBAAECggEAGeE3Y45WybofciDkiVZNgxzPm8EpcB40rg6/jrN+8DUa",
+        "YKniwkjtilFceoJY7CeFB30JhDNUcZj7UR+r7a9UgqSdAWerzZ1RAQaUEjBx7H2X",
+        "5NMvaS9JoE22/1kwSvmhR5wRaJRtB+BgE8fqn7aWyKky0t2lml02T0iYPPLAab9H",
+        "Ixn6CodlNyHV/zqbz3aF8pTFQWfp0yAWlgeKhLSu3BNiR6eFy0fDRQQElw8ft5h1",
+        "g8KzR41YlG/+TswFTBT+QDovKKWLrKI+bQGC7gxQ7t82svvTztg976+sRkRaWesZ",
+        "dH5oVm8rQDI3Wo8Zgd7ZKjAakt5kJ4T4Jz0jplYfEQKBgQD2tJMZQ1BYVq7XPT6y",
+        "yLghG8D5rfV5K2V0UrIY64nAY/IoQzDU6fsRZDuqlUtUhT1Eb4weZBp0yNvfLwGR",
+        "8AKuZ8udrvg9GJ88geHF0rtJSzyOQmSoE8CaXWAJ4Dlq7r1JIVmI5J8mMDqizIH8",
+        "wZlKGl8frzd9BOTHb0swfIjb7QKBgQDsUYGnNtp6TVVRIRi1P/fMkeojGTaEcMb5",
+        "6eCzGd+joB9dV2krfhTon7rJ2FwkUEzHmEvmTaE5SuHEX/BFT0Q+aAnwgNXn3Uf6",
+        "2yXjg79awbrjEaeqTEABcWCMyyYgLYixDNxjvudpWcgPDV4G5gaI+7Q+g6zkrEIN",
+        "8QI3UUX7aQKBgF0r/24IFRz3x9p0P+ynj5q5b50cTNvxPsS6wpZUxlaJqJf6IEQZ",
+        "BgAgecRH1AZct7HT6vhDWBaJETjt+MrT+T9C5gxsW0Y/uUvRxaG/n4njxz/25Srx",
+        "IslpwG6aZzTyazxmQvlHVq/GgS6gy+rYdvsckJZXxz4JDhof9yadsdZVAoGAPJM7",
+        "97/Qyu7NwskIC1XFUBPK/4oz9kjuSBtSNLaaI9gkkgmY9MQR2fsvpxOlss0+kR8R",
+        "vYwCmqv+KRcqgKmr5Y9HlPWBXzjSfZP1J1ebEkl8fT4GS1nWQkhspkpgkHj7g963",
+        "E35Y1SFlba5QftYxsKVMc4XPKKKbH/W6SrGzjZkCgYEAnjAC8jkzLv3BbaZr76PO",
+        "1nPOJcD3pFtC+r6TQoTPVJ5ek8/lX7GMk74VLQTf5rgyo1rhhb87O8w0tKMV4aHX",
+        "cP97YrDg1N9GkCqV9Gxnaj5ZWI+0ikT3qaOu59lwjQoVxxXw0lMeCKQEt+1H79zv",
+        "Z65V1+fkOMZzbi5hJAa4LNY=",
       ),
     },
     Ed25519: {
@@ -382,13 +377,13 @@ function decrypt(data: string, pin: string, date: Date): Result {
 }
 
 function pemToBytes(pem: string): Buffer {
-  const base64 = pem.split("\n").slice(1, -1).join("")
+  const base64 = pem.trim().split("\n").slice(1, -1).join("")
   return Buffer.from(base64, "base64")
 }
 
 const cryptoEngine = pkijs.getCrypto()
 
-type Algorithm =
+type AlgorithmInternal =
   | AlgorithmIdentifier
   | RsaHashedImportParams
   | EcKeyImportParams
@@ -398,7 +393,7 @@ type Algorithm =
 async function signInternal(
   data: Uint8Array,
   privateKey: Uint8Array,
-  algorithm: Algorithm,
+  algorithm: AlgorithmInternal,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -432,7 +427,7 @@ async function verifyInternal(
   data: Uint8Array,
   signature: Uint8Array,
   publicKey: Uint8Array,
-  algorithm: Algorithm,
+  algorithm: AlgorithmInternal,
 ): Promise<Result> {
   try {
     if (!cryptoEngine) return errorResult("Crypto engine is not available")
@@ -470,12 +465,23 @@ async function verifyInternal(
   }
 }
 
-const RS256 = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }
-const Ed25519 = { name: "Ed25519" }
+type Algorithm = keyof typeof algorithms
+
+const algorithms = {
+  RS256: { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+  Ed25519: { name: "Ed25519" },
+}
+
+const algoNames = Object.keys(algorithms)
+
+const testPrivateKeys = {
+  RS256: keys.private.RSA.TEST,
+  Ed25519: keys.private.Ed25519.TEST,
+}
 
 type SignOptions = {
   privateKeyPem?: string
-  algorithm?: "RS256" | "Ed25519"
+  algorithm?: Algorithm
 }
 
 async function sign(
@@ -492,16 +498,8 @@ async function sign(
     return errorResult("options.algorithm must be a string")
   }
 
-  const allowedAlgorithms = ["RS256", "Ed25519"]
-
-  if (!allowedAlgorithms.includes(algorithm)) {
-    const allowedString = allowedAlgorithms.join(" or ")
-    return errorResult("options.algorithm must be " + allowedString)
-  }
-
-  const testPrivateKeys = {
-    RS256: keys.private.RSA.TEST,
-    Ed25519: keys.private.Ed25519.TEST,
+  if (!algoNames.includes(algorithm)) {
+    return errorResult("options.algorithm must be " + algoNames.join(" or "))
   }
 
   const privateKeyPem = options.privateKeyPem || testPrivateKeys[algorithm]
@@ -517,14 +515,94 @@ async function sign(
   const dataBuffer = Buffer.from(data, "utf8")
   const privateKeyBuffer = pemToBytes(privateKeyPem)
 
-  const chosenAlgorithm = { Ed25519, RS256 }[algorithm]
+  const chosenAlgorithm = algorithms[algorithm]
 
   return await signInternal(dataBuffer, privateKeyBuffer, chosenAlgorithm)
 }
 
+function getInferredPublicKeyAndAlgorithm(vcType: string[], proofType: string) {
+  const inferredAlgorithm: Algorithm = /Ed25519/i.test(proofType)
+    ? "Ed25519"
+    : "RS256"
+
+  const keyTypes = { RS256: "RSA", Ed25519: "Ed25519" } as const
+  const keyType = keyTypes[inferredAlgorithm]
+
+  let keyRSA: keyof typeof keys.public.RSA | null = null
+  let keyEd25519: keyof typeof keys.public.Ed25519 | null = null
+
+  if (
+    (vcType.includes("NATIONAL_ID") && vcType.includes("PHYSICAL_ID")) ||
+    (vcType.includes("NATIONAL_ID") && vcType.includes("FACE_ID")) ||
+    vcType.includes("NATIONAL_ID") ||
+    vcType.includes("FRC") ||
+    vcType.includes("CRC") ||
+    vcType.includes("NID_CANCEL_CERTIFICATE")
+  ) {
+    keyRSA = "NADRA"
+    keyEd25519 = "NADRA"
+    //
+  } else if (
+    vcType.includes("BALOCHISTAN_ARMS_LICENSE") ||
+    vcType.includes("PUNJAB_ARMS_LICENSE")
+  )
+    keyRSA = "BALOCHISTAN_AND_PUNJAB_ARMS_LICENSE"
+  //
+  else if (vcType.includes("FEDERAL_ARMS_LICENSE"))
+    keyRSA = "FEDERAL_ARMS_LICENSE"
+  //
+  else if (vcType.includes("ISB_VEHICLE_REGISTRATION_CARD"))
+    keyRSA = "ISB_VEHICLE_REGISTRATION_CARD"
+  //
+  else if (vcType.includes("SINDH_VEHICLE_REGISTRATION_CARD")) {
+    keyRSA = "SINDH_VEHICLE_REGISTRATION_CARD"
+  }
+  //
+  else if (vcType.includes("PAK_SURVEY") && vcType.includes("EMPLOYEE_CARD"))
+    keyRSA = "PAK_SURVEY"
+  //
+  else if (
+    vcType.includes("NADRA_EMPLOYEE") &&
+    vcType.includes("EMPLOYEE_CARD")
+  )
+    keyRSA = "NADRA"
+  //
+  else if (
+    vcType.includes("POLIO_VACCINATION_PASS") ||
+    vcType.includes("YELLOW_FEVER_VACCINATION_PASS") ||
+    vcType.includes("COVID_VACCINATION_PASS") ||
+    vcType.includes("COVID") ||
+    vcType.includes("YELLOW_FEVER") ||
+    vcType.includes("POLIO") ||
+    vcType.includes("POLIO_IPV") ||
+    vcType.includes("INFLUENZA") ||
+    vcType.includes("MENINGITIS")
+  )
+    keyRSA = "NIMS"
+  //
+  else if (
+    vcType.includes("BIRTH_CERTIFICATE") ||
+    vcType.includes("DEATH_CERTIFICATE") ||
+    vcType.includes("MARRIAGE_CERTIFICATE") ||
+    vcType.includes("DIVORCE_CERTIFICATE") ||
+    vcType.includes("CANCELLATION_CERTIFICATE")
+  )
+    keyEd25519 = "NADRA2"
+
+  let inferredPublicKeyPem: string | null = null
+
+  if (keyType === "RSA" && keyRSA)
+    inferredPublicKeyPem = keys.public[keyType][keyRSA]
+
+  if (keyType === "Ed25519" && keyEd25519)
+    inferredPublicKeyPem = keys.public[keyType][keyEd25519]
+
+  return { inferredPublicKeyPem, inferredAlgorithm }
+}
+
 type VerifyOptions = {
   publicKeyPem?: string
-  algorithm?: "RS256" | "Ed25519"
+  algorithm?: Algorithm
 }
 
 async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
@@ -550,74 +628,8 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
     return errorResult("vc.type must be an array")
   }
 
-  let inferredPublicKeyPem = null
-  let inferredAlgorithm: "RS256" | "Ed25519" = "RS256"
-
-  if (
-    (vcType.includes("NATIONAL_ID") && vcType.includes("PHYSICAL_ID")) ||
-    (vcType.includes("NATIONAL_ID") && vcType.includes("FACE_ID"))
-  ) {
-    if (/Ed25519/i.test(vc.proof.type)) {
-      inferredAlgorithm = "Ed25519"
-      inferredPublicKeyPem = keys.public.Ed25519.NADRA
-    } else {
-      inferredPublicKeyPem = keys.public.RSA.NADRA
-    }
-  } else if (
-    vcType.includes("NATIONAL_ID") ||
-    vcType.includes("FRC") ||
-    vcType.includes("CRC") ||
-    vcType.includes("NID_CANCEL_CERTIFICATE")
-  ) {
-    if (/Ed25519/i.test(vc.proof.type)) {
-      inferredAlgorithm = "Ed25519"
-      inferredPublicKeyPem = keys.public.Ed25519.NADRA
-    } else {
-      inferredPublicKeyPem = keys.public.RSA.NADRA
-    }
-  } else if (
-    vcType.includes("BALOCHISTAN_ARMS_LICENSE") ||
-    vcType.includes("PUNJAB_ARMS_LICENSE")
-  ) {
-    inferredPublicKeyPem = keys.public.RSA.BALOCHISTAN_AND_PUNJAB_ARMS_LICENSE
-  } else if (vcType.includes("FEDERAL_ARMS_LICENSE")) {
-    inferredPublicKeyPem = keys.public.RSA.FEDERAL_ARMS_LICENSE
-  } else if (vcType.includes("ISB_VEHICLE_REGISTRATION_CARD")) {
-    inferredPublicKeyPem = keys.public.RSA.ISB_VEHICLE_REGISTRATION_CARD
-  } else if (vcType.includes("SINDH_VEHICLE_REGISTRATION_CARD")) {
-    inferredPublicKeyPem = keys.public.RSA.SINDH_VEHICLE_REGISTRATION_CARD
-  } else if (
-    vcType.includes("PAK_SURVEY") &&
-    vcType.includes("EMPLOYEE_CARD")
-  ) {
-    inferredPublicKeyPem = keys.public.RSA.PAK_SURVEY
-  } else if (
-    vcType.includes("NADRA_EMPLOYEE") &&
-    vcType.includes("EMPLOYEE_CARD")
-  ) {
-    inferredPublicKeyPem = keys.public.RSA.NADRA
-  } else if (
-    vcType.includes("POLIO_VACCINATION_PASS") ||
-    vcType.includes("YELLOW_FEVER_VACCINATION_PASS") ||
-    vcType.includes("COVID_VACCINATION_PASS") ||
-    vcType.includes("COVID") ||
-    vcType.includes("YELLOW_FEVER") ||
-    vcType.includes("POLIO") ||
-    vcType.includes("POLIO_IPV") ||
-    vcType.includes("INFLUENZA") ||
-    vcType.includes("MENINGITIS")
-  ) {
-    inferredPublicKeyPem = keys.public.RSA.NIMS
-  } else if (
-    vcType.includes("BIRTH_CERTIFICATE") ||
-    vcType.includes("DEATH_CERTIFICATE") ||
-    vcType.includes("MARRIAGE_CERTIFICATE") ||
-    vcType.includes("DIVORCE_CERTIFICATE") ||
-    vcType.includes("CANCELLATION_CERTIFICATE")
-  ) {
-    inferredAlgorithm = "Ed25519"
-    inferredPublicKeyPem = keys.public.Ed25519.NADRA2
-  }
+  const { inferredPublicKeyPem, inferredAlgorithm } =
+    getInferredPublicKeyAndAlgorithm(vcType, vc.proof.type)
 
   const algorithm = options.algorithm || inferredAlgorithm
 
@@ -625,11 +637,8 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
     return errorResult("options.algorithm must be a string")
   }
 
-  const allowedAlgorithms = ["RS256", "Ed25519"]
-
-  if (!allowedAlgorithms.includes(algorithm)) {
-    const allowedString = allowedAlgorithms.join(" or ")
-    return errorResult("options.algorithm must be " + allowedString)
+  if (!algoNames.includes(algorithm)) {
+    return errorResult("options.algorithm must be " + algoNames.join(" or "))
   }
 
   const publicKeyPem = options.publicKeyPem || inferredPublicKeyPem
@@ -648,7 +657,7 @@ async function verify(vc: VC, options: VerifyOptions = {}): Promise<Result> {
   const signatureBuffer = Buffer.from(proof.jws, "base64")
   const publicKeyBuffer = pemToBytes(publicKeyPem)
 
-  const chosenAlgorithm = { Ed25519, RS256 }[algorithm]
+  const chosenAlgorithm = algorithms[algorithm]
 
   return await verifyInternal(
     dataBuffer,
