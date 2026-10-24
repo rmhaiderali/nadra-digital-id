@@ -517,6 +517,8 @@ async function sign(
   return await signInternal(dataBuffer, privateKeyBuffer, chosenAlgorithm)
 }
 
+// https://play.google.com/store/apps/details?id=pk.gov.nadra.pakid
+// Version 5.8.2
 function getInferredPublicKeyAndAlgorithm(vcType: string[], proofType: string) {
   const inferredAlgorithm: Algorithm = /Ed25519/i.test(proofType)
     ? "Ed25519"
